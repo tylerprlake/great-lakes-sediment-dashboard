@@ -119,6 +119,16 @@
             border-color: #764ba2;
         }
 
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            border-color: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
         .dashboard {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -276,7 +286,40 @@
             min-width: 200px;
         }
 
-        /* Core Profile Modal */
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 8px 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-label:hover {
+            background: #f0f0ff;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-label.checked {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -295,10 +338,14 @@
             padding: 30px;
             border-radius: 15px;
             width: 90%;
-            max-width: 1200px;
+            max-width: 1000px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             max-height: 90vh;
             overflow-y: auto;
+        }
+
+        .modal-content-wide {
+            max-width: 1400px;
         }
 
         .close {
@@ -316,6 +363,84 @@
         }
 
         .core-profile-container {
+            margin-top: 20px;
+        }
+
+        .core-chart-wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            height: 600px;
+            position: relative;
+        }
+
+        .core-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .core-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .core-controls > div {
+            flex: 1;
+        }
+
+        .core-controls label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .core-controls select {
+            width: 100%;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 5px;
+            background: #e0e0e0;
+            padding: 5px;
+            border-radius: 25px;
+            width: fit-content;
+        }
+
+        .toggle-btn {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: #666;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        /* Core Diagram Modal */
+        .core-diagram-container {
             display: grid;
             grid-template-columns: 180px 1fr;
             gap: 30px;
@@ -393,90 +518,6 @@
             border-color: rgba(255,255,255,0.6);
         }
 
-        .core-chart-wrapper {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            height: 600px;
-            position: relative;
-        }
-
-        .core-info {
-            grid-column: 1 / -1;
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-        }
-
-        .core-controls {
-            grid-column: 1 / -1;
-            margin-bottom: 20px;
-        }
-
-        .core-controls label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #495057;
-        }
-
-        .core-controls select {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .toggle-group {
-            display: flex;
-            gap: 5px;
-            background: #e0e0e0;
-            padding: 5px;
-            border-radius: 25px;
-            width: fit-content;
-        }
-
-        .toggle-btn {
-            padding: 8px 20px;
-            border: none;
-            background: transparent;
-            color: #666;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .toggle-btn.active {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .legend {
-            grid-column: 1 / -1;
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 5px 0;
-        }
-
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
-        }
-
         .water-interface {
             position: absolute;
             top: 15px;
@@ -501,6 +542,13 @@
             border-radius: 3px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             white-space: nowrap;
+        }
+
+        .diagram-info {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
 
         .progress-container {
@@ -561,6 +609,20 @@
                         <button class="toggle-btn active" data-type="S.SURFACE" onclick="selectSampleType('S.SURFACE')">Surface</button>
                         <button class="toggle-btn" data-type="S.CORE" onclick="selectSampleType('S.CORE')">Core</button>
                         <button class="toggle-btn" data-type="ALL" onclick="selectSampleType('ALL')">All</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>⚙️ Normalization:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label" id="tocLabel">
+                            <input type="checkbox" id="tocNormalize" onchange="toggleNormalization()">
+                            <span>Normalize to TOC</span>
+                        </label>
+                        <label class="checkbox-label" id="finesLabel">
+                            <input type="checkbox" id="finesNormalize" onchange="toggleNormalization()">
+                            <span>Normalize to Fine Fraction (&lt;63 μm)</span>
+                        </label>
                     </div>
                 </div>
 
@@ -645,31 +707,53 @@
 
     <!-- Core Profile Modal -->
     <div id="coreModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content modal-content-wide">
             <span class="close" onclick="closeCoreModal()">&times;</span>
             <h2 id="coreModalTitle">Core Profile</h2>
             
             <div class="core-info" id="coreModalInfo"></div>
             
             <div class="core-controls">
-                <label>Select Contaminant:</label>
-                <select id="coreContaminantSelect" onchange="updateCoreProfileForVariable()">
-                    <option value="">Select a contaminant...</option>
-                </select>
+                <div>
+                    <label>Select Contaminant:</label>
+                    <select id="coreContaminantSelect" onchange="updateCoreProfileForVariable()">
+                        <option value="">Select a contaminant...</option>
+                    </select>
+                </div>
+                <div style="flex: 0;">
+                    <button class="btn btn-secondary" onclick="showCoreDiagram()">📊 View Core Diagram</button>
+                </div>
             </div>
             
             <div class="core-profile-container">
-                <div class="core-column">
-                    <div class="depth-axis" id="depthAxis"></div>
-                    <div class="water-interface"></div>
-                    <div class="core-visual" id="coreVisual"></div>
-                </div>
                 <div class="core-chart-wrapper">
                     <canvas id="coreProfileChart"></canvas>
                 </div>
             </div>
 
             <div class="legend" id="coreLegend"></div>
+        </div>
+    </div>
+
+    <!-- Core Diagram Modal -->
+    <div id="coreDiagramModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCoreDiagramModal()">&times;</span>
+            <h2>Core Diagram</h2>
+            
+            <div class="diagram-info" id="diagramInfo"></div>
+            
+            <div class="core-diagram-container">
+                <div class="core-column">
+                    <div class="depth-axis" id="diagramDepthAxis"></div>
+                    <div class="water-interface"></div>
+                    <div class="core-visual" id="diagramCoreVisual"></div>
+                </div>
+                <div style="padding: 20px;">
+                    <h3>Core Slices</h3>
+                    <div id="sliceDetails"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -683,11 +767,15 @@
         const state = {
             contaminantData: {},
             siteData: {},
+            carbonData: {},
+            physicalData: {},
             mergedData: [],
             selectedContaminant: null,
             selectedYear: null,
             selectedSpecificContaminant: '',
             selectedSampleType: 'S.SURFACE',
+            normalizeTOC: false,
+            normalizeFines: false,
             currentCoreData: null,
             selectedCoreVariable: null,
             map: null,
@@ -699,9 +787,11 @@
             }
         };
 
-        // Data source mapping - renamed Metals & Metalloids
+        // Data source mapping
         const DATA_SOURCES = {
             sites: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_sites.csv',
+            carbon: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_carbon.csv',
+            physical: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_physical.csv',
             contaminants: {
                 'Metals and Nutrients': 'great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv',
                 'PCBs': 'great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv',
@@ -716,13 +806,10 @@
                 'Organophosphates': 'great_lakes_sediment_monitoring_organophosphates.csv',
                 'Pyrethroids': 'great_lakes_sediment_monitoring_pyrethroids.csv',
                 'Amines': 'great_lakes_sediment_monitoring_amines.csv',
-                'Carbon': 'great_lakes_sediment_monitoring_carbon.csv',
-                'Physical': 'great_lakes_sediment_monitoring_physical.csv',
                 'Radionuclides': 'great_lakes_sediment_monitoring_radionuclides.csv'
             }
         };
 
-        // Initialize the application
         async function init() {
             try {
                 document.getElementById('progressContainer').style.display = 'block';
@@ -753,9 +840,8 @@
             }
         }
 
-        // Load all data sources
         async function loadAllData() {
-            const totalFiles = 1 + Object.keys(DATA_SOURCES.contaminants).length;
+            const totalFiles = 3 + Object.keys(DATA_SOURCES.contaminants).length;
             let loadedFiles = 0;
 
             function updateProgress() {
@@ -774,6 +860,28 @@
             } catch (error) {
                 throw new Error('Failed to load site data: ' + error.message);
             }
+
+            try {
+                document.getElementById('loadingText').textContent = 'Loading carbon data...';
+                state.carbonData = await loadCSV(DATA_SOURCES.carbon);
+                console.log('Loaded carbon:', state.carbonData.length, 'records');
+                updateProgress();
+            } catch (error) {
+                console.warn('Carbon data not available:', error);
+                state.carbonData = [];
+                updateProgress();
+            }
+
+            try {
+                document.getElementById('loadingText').textContent = 'Loading physical data...';
+                state.physicalData = await loadCSV(DATA_SOURCES.physical);
+                console.log('Loaded physical:', state.physicalData.length, 'records');
+                updateProgress();
+            } catch (error) {
+                console.warn('Physical data not available:', error);
+                state.physicalData = [];
+                updateProgress();
+            }
             
             for (const [name, filename] of Object.entries(DATA_SOURCES.contaminants)) {
                 try {
@@ -784,6 +892,7 @@
                     updateProgress();
                 } catch (error) {
                     console.error(`Failed to load ${name}:`, error);
+                    updateProgress();
                 }
             }
             
@@ -842,6 +951,102 @@
             console.log('Merged data:', state.mergedData.length, 'records');
         }
 
+        function toggleNormalization() {
+            state.normalizeTOC = document.getElementById('tocNormalize').checked;
+            state.normalizeFines = document.getElementById('finesNormalize').checked;
+            
+            // Update checkbox label styling
+            document.getElementById('tocLabel').classList.toggle('checked', state.normalizeTOC);
+            document.getElementById('finesLabel').classList.toggle('checked', state.normalizeFines);
+            
+            updateVisualization();
+        }
+
+        function getNormalizationFactors(sampleId) {
+            const factors = { toc: null, fines: null };
+            
+            // Get TOC value (VMV_CODE 13516)
+            if (state.normalizeTOC && state.carbonData.length > 0) {
+                const tocRecord = state.carbonData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '13516'
+                );
+                if (tocRecord) {
+                    const tocValue = parseFloat(tocRecord.VALUE_VALEUR);
+                    if (!isNaN(tocValue) && tocValue > 0) {
+                        factors.toc = tocValue;
+                    }
+                }
+            }
+            
+            // Get fine fraction (VMV_CODE 5924 or sum of 5896-5906)
+            if (state.normalizeFines && state.physicalData.length > 0) {
+                const finesRecord = state.physicalData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '5924'
+                );
+                
+                if (finesRecord) {
+                    const finesValue = parseFloat(finesRecord.VALUE_VALEUR);
+                    if (!isNaN(finesValue) && finesValue > 0) {
+                        factors.fines = finesValue;
+                    }
+                } else {
+                    // Sum VMV_CODE 5896 to 5906
+                    const grainSizeRecords = state.physicalData.filter(d => 
+                        d['SAMPLE_ID_ÉCHANTILLON'] === sampleId
+                    );
+                    
+                    let sum = 0;
+                    let hasData = false;
+                    for (let code = 5896; code <= 5906; code++) {
+                        const record = grainSizeRecords.find(d => d.VMV_CODE === code.toString());
+                        if (record) {
+                            const value = parseFloat(record.VALUE_VALEUR);
+                            if (!isNaN(value)) {
+                                sum += value;
+                                hasData = true;
+                            }
+                        }
+                    }
+                    
+                    if (hasData && sum > 0) {
+                        factors.fines = sum;
+                    }
+                }
+            }
+            
+            return factors;
+        }
+
+        function normalizeValue(value, factors) {
+            let normalized = value;
+            
+            if (state.normalizeTOC && factors.toc !== null) {
+                normalized = normalized / factors.toc;
+            }
+            
+            if (state.normalizeFines && factors.fines !== null) {
+                normalized = normalized / (factors.fines / 100); // Convert percent to decimal
+            }
+            
+            return normalized;
+        }
+
+        function canNormalizeSample(sampleId) {
+            const factors = getNormalizationFactors(sampleId);
+            
+            if (state.normalizeTOC && factors.toc === null) {
+                return false;
+            }
+            
+            if (state.normalizeFines && factors.fines === null) {
+                return false;
+            }
+            
+            return true;
+        }
+
         function initializeControls() {
             const contaminantButtons = document.getElementById('contaminantButtons');
             contaminantButtons.innerHTML = '';
@@ -869,7 +1074,6 @@
             
             const years = getAvailableYears(state.selectedContaminant);
             
-            // Add "All Years" button
             const allYearsBtn = document.createElement('button');
             allYearsBtn.className = 'btn';
             allYearsBtn.textContent = 'All Years';
@@ -906,7 +1110,7 @@
 
         function selectContaminant(name) {
             state.selectedContaminant = name;
-            state.selectedSpecificContaminant = ''; // Reset analyte selection
+            state.selectedSpecificContaminant = '';
             
             document.querySelectorAll('#contaminantButtons .btn').forEach(btn => {
                 btn.classList.toggle('active', btn.textContent === name);
@@ -915,7 +1119,6 @@
             updateYearButtons();
             updateContaminantDropdown();
             
-            // Reset contaminant dropdown to "All"
             document.getElementById('contaminantSelect').value = '';
             
             const years = getAvailableYears(name);
@@ -987,7 +1190,8 @@
                 state.map.remove();
             }
             
-            state.map = L.map('map').setView([45.4, -81.0], 6);
+            // Start centered on Great Lakes with appropriate zoom
+            state.map = L.map('map').setView([45.0, -83.0], 6);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
@@ -1016,6 +1220,29 @@
             
             if (state.selectedSpecificContaminant) {
                 data = data.filter(d => d.VARIABLE === state.selectedSpecificContaminant);
+            }
+
+            // Apply normalization filters
+            if (state.normalizeTOC || state.normalizeFines) {
+                data = data.filter(d => {
+                    const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                    return sampleId && canNormalizeSample(sampleId);
+                });
+                
+                // Apply normalization to values
+                data = data.map(d => {
+                    const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                    const originalValue = parseFloat(d.VALUE_VALEUR);
+                    const factors = getNormalizationFactors(sampleId);
+                    const normalizedValue = normalizeValue(originalValue, factors);
+                    
+                    return {
+                        ...d,
+                        VALUE_VALEUR: normalizedValue.toString(),
+                        ORIGINAL_VALUE: originalValue.toString(),
+                        NORMALIZED: true
+                    };
+                });
             }
             
             return data;
@@ -1050,11 +1277,21 @@
             const typeText = state.selectedSampleType === 'ALL' ? 'All Types' : 
                            (state.selectedSampleType === 'S.SURFACE' ? 'Surface' : 'Core');
             const yearText = state.selectedYear === null ? 'All Years' : state.selectedYear;
+            
+            let normText = '';
+            if (state.normalizeTOC && state.normalizeFines) {
+                normText = ' | <strong>Normalized:</strong> TOC + Fine Fraction';
+            } else if (state.normalizeTOC) {
+                normText = ' | <strong>Normalized:</strong> TOC';
+            } else if (state.normalizeFines) {
+                normText = ' | <strong>Normalized:</strong> Fine Fraction';
+            }
+            
             info.innerHTML = `
                 <strong>Current Selection:</strong> ${state.selectedContaminant}${specificText} | 
                 Type: ${typeText} |
                 Year: ${yearText} | 
-                Records: ${data.length}
+                Records: ${data.length}${normText}
             `;
         }
 
@@ -1136,21 +1373,15 @@
                 state.markers.push(marker);
             });
             
-            // Smart map zoom
             if (state.markers.length > 0) {
                 const group = L.featureGroup(state.markers);
                 const bounds = group.getBounds();
                 
                 if (state.markers.length === 1) {
-                    // Single station - zoom to show one Great Lake
-                    state.map.setView(bounds.getCenter(), 7);
+                    state.map.setView(bounds.getCenter(), 8);
                 } else {
-                    // Multiple stations - fit to bounds with padding
                     state.map.fitBounds(bounds.pad(0.1));
                 }
-            } else {
-                // No data - default Great Lakes view
-                state.map.setView([45.4, -81.0], 6);
             }
         }
 
@@ -1229,7 +1460,6 @@
             state.selectedCoreVariable = variable;
             const filteredData = state.currentCoreData.filter(d => d.VARIABLE === variable);
             
-            renderCoreVisual(filteredData);
             renderCoreProfileChart(filteredData);
         }
 
@@ -1243,11 +1473,33 @@
             }
         }
 
-        function renderCoreVisual(data) {
-            const coreVisual = document.getElementById('coreVisual');
-            const depthAxis = document.getElementById('depthAxis');
+        function showCoreDiagram() {
+            if (!state.currentCoreData) return;
+            
+            const site = state.currentCoreData[0];
+            const yearText = state.selectedYear === null ? 'All' : state.selectedYear;
+            
+            document.getElementById('diagramInfo').innerHTML = `
+                <strong>Site:</strong> ${site.SITE_NAME || site.SITE_NO}<br>
+                <strong>Year:</strong> ${yearText}<br>
+                <strong>Contaminant Group:</strong> ${state.selectedContaminant}
+            `;
+            
+            renderCoreDiagram(state.currentCoreData);
+            document.getElementById('coreDiagramModal').style.display = 'block';
+        }
+
+        function closeCoreDiagramModal() {
+            document.getElementById('coreDiagramModal').style.display = 'none';
+        }
+
+        function renderCoreDiagram(data) {
+            const coreVisual = document.getElementById('diagramCoreVisual');
+            const depthAxis = document.getElementById('diagramDepthAxis');
+            const sliceDetails = document.getElementById('sliceDetails');
             coreVisual.innerHTML = '';
             depthAxis.innerHTML = '';
+            sliceDetails.innerHTML = '';
             
             const depthMap = {};
             data.forEach(d => {
@@ -1259,16 +1511,15 @@
                     depthMap[key] = {
                         start: startDepth,
                         end: endDepth,
-                        value: parseFloat(d.VALUE_VALEUR)
+                        count: 0
                     };
                 }
+                depthMap[key].count++;
             });
             
             const depths = Object.values(depthMap).sort((a, b) => b.start - a.start);
             const maxDepth = Math.max(...depths.map(d => Math.abs(d.end)));
             
-            // Calculate total height for alignment
-            const totalHeight = 500;
             let cumulativeHeight = 0;
             
             depths.forEach((depth, idx) => {
@@ -1276,7 +1527,7 @@
                 sliceDiv.className = 'core-slice';
                 
                 const thickness = Math.abs(depth.end - depth.start);
-                const heightPx = (thickness / maxDepth) * totalHeight;
+                const heightPx = (thickness / maxDepth) * 450;
                 sliceDiv.style.height = Math.max(heightPx, 25) + 'px';
                 
                 sliceDiv.textContent = `${thickness.toFixed(1)} cm`;
@@ -1297,6 +1548,16 @@
                 marker.appendChild(markerText);
                 marker.appendChild(markerLine);
                 depthAxis.appendChild(marker);
+                
+                // Add slice details
+                const detailDiv = document.createElement('div');
+                detailDiv.style.padding = '10px';
+                detailDiv.style.borderBottom = '1px solid #dee2e6';
+                detailDiv.innerHTML = `
+                    <strong>Slice ${idx + 1}:</strong> ${depth.start.toFixed(1)} to ${depth.end.toFixed(1)} cm 
+                    (${thickness.toFixed(1)} cm thick) - ${depth.count} measurements
+                `;
+                sliceDetails.appendChild(detailDiv);
                 
                 cumulativeHeight += heightPx;
             });
@@ -1343,10 +1604,14 @@
             const variable = state.selectedCoreVariable;
             const unit = data[0]['UNIT_UNITÉ'] || '';
             
-            // Calculate y-axis range to match core visual
-            const depths = points.map(p => p.depth);
-            const maxDepth = Math.max(...depths.map(d => Math.abs(d)));
-            const minDepth = 0;
+            // Get min and max depths for axis
+            const allDepths = points.map(p => p.depth);
+            const maxDepth = Math.min(...allDepths); // Most negative (deepest)
+            const minDepth = 0; // Surface
+            
+            // Create tick marks every cm
+            const depthRange = Math.abs(maxDepth);
+            const tickStep = Math.ceil(depthRange / 20); // About 20 ticks
             
             state.charts.coreProfile = new Chart(ctx, {
                 type: 'line',
@@ -1389,7 +1654,7 @@
                             position: 'bottom',
                             title: {
                                 display: true,
-                                text: `Concentration (${unit})`,
+                                text: 'Concentration (μg/g)',
                                 font: {
                                     size: 14,
                                     weight: 'bold'
@@ -1397,12 +1662,13 @@
                             },
                             grid: {
                                 color: 'rgba(0, 0, 0, 0.1)'
-                            }
+                            },
+                            beginAtZero: true
                         },
                         y: {
                             reverse: false,
-                            min: minDepth,
-                            max: -maxDepth,
+                            min: maxDepth,
+                            max: minDepth,
                             title: {
                                 display: true,
                                 text: 'Depth (cm)',
@@ -1415,6 +1681,7 @@
                                 color: 'rgba(0, 0, 0, 0.1)'
                             },
                             ticks: {
+                                stepSize: 1,
                                 callback: function(value) {
                                     return value.toFixed(0) + ' cm';
                                 }
@@ -1426,14 +1693,10 @@
             
             const legendDiv = document.getElementById('coreLegend');
             legendDiv.innerHTML = `
-                <strong>Core Profile Information:</strong><br>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #667eea"></div>
-                    <span>${variable}: ${points.length} depth measurements</span>
-                </div>
+                <strong>Core Profile Information:</strong> ${variable} - ${points.length} depth measurements<br>
                 <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     <strong>Note:</strong> 0 cm represents the sediment-water interface. Negative values indicate depth below the interface.
-                    Data points are positioned at the midpoint of each core slice and should align vertically with the core diagram.
+                    Data points are positioned at the midpoint of each core slice.
                 </div>
             `;
         }
@@ -1461,8 +1724,23 @@
                 if (state.selectedSpecificContaminant) {
                     filtered = data.filter(d => d.VARIABLE === state.selectedSpecificContaminant);
                 }
+
+                // Apply normalization
+                if (state.normalizeTOC || state.normalizeFines) {
+                    filtered = filtered.filter(d => {
+                        const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                        return sampleId && canNormalizeSample(sampleId);
+                    }).map(d => {
+                        const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                        const originalValue = parseFloat(d.VALUE_VALEUR);
+                        const factors = getNormalizationFactors(sampleId);
+                        return normalizeValue(originalValue, factors);
+                    });
+                } else {
+                    filtered = filtered.map(d => parseFloat(d.VALUE_VALEUR));
+                }
                 
-                const values = filtered.map(d => parseFloat(d.VALUE_VALEUR)).filter(v => !isNaN(v) && v > 0);
+                const values = filtered.filter(v => !isNaN(v) && v > 0);
                 
                 yearlyData[year] = values.length > 0 ?
                     values.reduce((a, b) => a + b, 0) / values.length : null;
@@ -1518,7 +1796,6 @@
         }
 
         function updateStationChart(data) {
-            // Calculate average concentration per station
             const stationData = {};
             data.forEach(d => {
                 const siteNo = d.SITE_NO;
@@ -1533,13 +1810,11 @@
                 }
             });
             
-            // Calculate averages and sort by concentration (highest first)
             const stationAverages = Object.entries(stationData).map(([name, values]) => ({
                 name,
                 average: values.reduce((a, b) => a + b, 0) / values.length
             })).sort((a, b) => b.average - a.average);
             
-            // Take top 15 stations
             const topStations = stationAverages.slice(0, 15);
             const stations = topStations.map(s => s.name);
             const averages = topStations.map(s => s.average);
@@ -1603,7 +1878,9 @@
                 const siteName = d.SITE_NAME || siteNo;
                 const matrix = d.MATRIX || '';
                 const variable = d.VARIABLE || 'N/A';
-                const value = d.VALUE_VALEUR || 'N/A';
+                const value = d.NORMALIZED ? 
+                    `${parseFloat(d.VALUE_VALEUR).toFixed(3)} (orig: ${parseFloat(d.ORIGINAL_VALUE).toFixed(3)})` :
+                    (d.VALUE_VALEUR || 'N/A');
                 const unit = d['UNIT_UNITÉ'] || '';
                 const startDepth = parseFloat(d.START_DEPTH_METERS) * 100;
                 const endDepth = parseFloat(d.END_DEPTH_METERS) * 100;
@@ -1638,9 +1915,13 @@
         }
 
         window.onclick = function(event) {
-            const modal = document.getElementById('coreModal');
-            if (event.target == modal) {
+            const coreModal = document.getElementById('coreModal');
+            const diagramModal = document.getElementById('coreDiagramModal');
+            if (event.target == coreModal) {
                 closeCoreModal();
+            }
+            if (event.target == diagramModal) {
+                closeCoreDiagramModal();
             }
         }
 
