@@ -123,6 +123,8 @@
             background: #6c757d;
             color: white;
             border-color: #6c757d;
+            padding: 10px 20px;
+            border-radius: 5px;
         }
 
         .btn-secondary:hover {
@@ -385,13 +387,10 @@
 
         .core-controls {
             margin-bottom: 20px;
-            display: flex;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 200px;
+            gap: 15px;
             align-items: flex-end;
-        }
-
-        .core-controls > div {
-            flex: 1;
         }
 
         .core-controls label {
@@ -399,6 +398,7 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: #495057;
+            font-size: 0.95em;
         }
 
         .core-controls select {
@@ -442,51 +442,10 @@
         /* Core Diagram Modal */
         .core-diagram-container {
             display: grid;
-            grid-template-columns: 180px 1fr;
+            grid-template-columns: 200px 1fr;
             gap: 30px;
             margin-top: 20px;
             align-items: start;
-        }
-
-        .core-column {
-            position: relative;
-            padding-left: 60px;
-        }
-
-        .depth-axis {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 55px;
-            height: 100%;
-        }
-
-        .depth-marker {
-            position: absolute;
-            left: 0;
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 8px;
-        }
-
-        .depth-marker-line {
-            position: absolute;
-            right: 0;
-            width: 8px;
-            height: 1px;
-            background: #333;
-        }
-
-        .depth-marker-text {
-            font-size: 0.85em;
-            font-weight: 600;
-            color: #000;
-            background: white;
-            padding: 2px 5px;
-            border-radius: 3px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
 
         .core-visual {
@@ -518,10 +477,10 @@
             border-color: rgba(255,255,255,0.6);
         }
 
-        .water-interface {
+        .water-interface-diagram {
             position: absolute;
             top: 15px;
-            left: 60px;
+            left: 15px;
             right: 15px;
             height: 3px;
             background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
@@ -529,11 +488,12 @@
             z-index: 10;
         }
 
-        .water-interface::before {
-            content: '0 cm - Water/Sediment Interface';
+        .water-interface-diagram::before {
+            content: '0 cm';
             position: absolute;
             top: -20px;
-            left: 0;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 0.75em;
             font-weight: 600;
             color: #0077be;
@@ -576,6 +536,42 @@
             justify-content: center;
             color: white;
             font-weight: bold;
+        }
+
+        .normalizing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .normalizing-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .date-method-select {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-method-select label {
+            margin: 0;
+            font-size: 0.9em;
+        }
+
+        .date-method-select select {
+            min-width: 150px;
         }
     </style>
 </head>
@@ -705,6 +701,15 @@
         <div id="error" class="error" style="display: none;"></div>
     </div>
 
+    <!-- Normalizing Overlay -->
+    <div id="normalizingOverlay" class="normalizing-overlay">
+        <div class="normalizing-content">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-size: 1.2em;">Normalizing data...</p>
+            <p style="color: #666; margin-top: 10px;">This may take a moment for large datasets</p>
+        </div>
+    </div>
+
     <!-- Core Profile Modal -->
     <div id="coreModal" class="modal">
         <div class="modal-content modal-content-wide">
@@ -720,8 +725,30 @@
                         <option value="">Select a contaminant...</option>
                     </select>
                 </div>
-                <div style="flex: 0;">
+                <div class="date-method-select">
+                    <label>Dating Method:</label>
+                    <select id="dateMethSelect" onchange="updateCoreProfileForVariable()">
+                        <option value="none">Depth Only</option>
+                        <option value="cs137">¹³⁷Cs Dating</option>
+                        <option value="pb210">²¹⁰Pb Dating</option>
+                        <option value="mean">Geometric Mean</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
                     <button class="btn btn-secondary" onclick="showCoreDiagram()">📊 View Core Diagram</button>
+                </div>
+            </div>
+
+            <div class="core-controls">
+                <div class="checkbox-group">
+                    <label class="checkbox-label" id="coreNormTocLabel">
+                        <input type="checkbox" id="coreNormToc" onchange="updateCoreNormalization()">
+                        <span>Normalize to TOC</span>
+                    </label>
+                    <label class="checkbox-label" id="coreNormFinesLabel">
+                        <input type="checkbox" id="coreNormFines" onchange="updateCoreNormalization()">
+                        <span>Normalize to Fine Fraction</span>
+                    </label>
                 </div>
             </div>
             
@@ -744,9 +771,8 @@
             <div class="diagram-info" id="diagramInfo"></div>
             
             <div class="core-diagram-container">
-                <div class="core-column">
-                    <div class="depth-axis" id="diagramDepthAxis"></div>
-                    <div class="water-interface"></div>
+                <div style="position: relative;">
+                    <div class="water-interface-diagram"></div>
                     <div class="core-visual" id="diagramCoreVisual"></div>
                 </div>
                 <div style="padding: 20px;">
@@ -769,6 +795,7 @@
             siteData: {},
             carbonData: {},
             physicalData: {},
+            dateData: {},
             mergedData: [],
             selectedContaminant: null,
             selectedYear: null,
@@ -776,8 +803,12 @@
             selectedSampleType: 'S.SURFACE',
             normalizeTOC: false,
             normalizeFines: false,
+            coreNormalizeTOC: false,
+            coreNormalizeFines: false,
             currentCoreData: null,
+            currentCoreSiteNo: null,
             selectedCoreVariable: null,
+            selectedDateMethod: 'none',
             map: null,
             markers: [],
             charts: {
@@ -792,6 +823,7 @@
             sites: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_sites.csv',
             carbon: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_carbon.csv',
             physical: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_physical.csv',
+            date: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_date.csv',
             contaminants: {
                 'Metals and Nutrients': 'great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv',
                 'PCBs': 'great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv',
@@ -841,7 +873,7 @@
         }
 
         async function loadAllData() {
-            const totalFiles = 3 + Object.keys(DATA_SOURCES.contaminants).length;
+            const totalFiles = 4 + Object.keys(DATA_SOURCES.contaminants).length;
             let loadedFiles = 0;
 
             function updateProgress() {
@@ -880,6 +912,17 @@
             } catch (error) {
                 console.warn('Physical data not available:', error);
                 state.physicalData = [];
+                updateProgress();
+            }
+
+            try {
+                document.getElementById('loadingText').textContent = 'Loading date data...';
+                state.dateData = await loadCSV(DATA_SOURCES.date);
+                console.log('Loaded date:', state.dateData.length, 'records');
+                updateProgress();
+            } catch (error) {
+                console.warn('Date data not available:', error);
+                state.dateData = [];
                 updateProgress();
             }
             
@@ -951,35 +994,90 @@
             console.log('Merged data:', state.mergedData.length, 'records');
         }
 
-        function toggleNormalization() {
+        async function toggleNormalization() {
+            const wasNormalized = state.normalizeTOC || state.normalizeFines;
+            
             state.normalizeTOC = document.getElementById('tocNormalize').checked;
             state.normalizeFines = document.getElementById('finesNormalize').checked;
             
-            // Update checkbox label styling
+            const isNormalized = state.normalizeTOC || state.normalizeFines;
+            
             document.getElementById('tocLabel').classList.toggle('checked', state.normalizeTOC);
             document.getElementById('finesLabel').classList.toggle('checked', state.normalizeFines);
             
+            // Show loading overlay if enabling normalization
+            if (isNormalized && !wasNormalized) {
+                document.getElementById('normalizingOverlay').style.display = 'flex';
+                await new Promise(resolve => setTimeout(resolve, 100)); // Allow UI to update
+            }
+            
             updateVisualization();
+            
+            document.getElementById('normalizingOverlay').style.display = 'none';
+        }
+
+        async function updateCoreNormalization() {
+            state.coreNormalizeTOC = document.getElementById('coreNormToc').checked;
+            state.coreNormalizeFines = document.getElementById('coreNormFines').checked;
+            
+            document.getElementById('coreNormTocLabel').classList.toggle('checked', state.coreNormalizeTOC);
+            document.getElementById('coreNormFinesLabel').classList.toggle('checked', state.coreNormalizeFines);
+            
+            if (state.coreNormalizeTOC || state.coreNormalizeFines) {
+                document.getElementById('normalizingOverlay').style.display = 'flex';
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            updateCoreProfileForVariable();
+            
+            document.getElementById('normalizingOverlay').style.display = 'none';
+        }
+
+        function getTOCValue(sampleId) {
+            // First try VMV_CODE 13516
+            const tocRecord = state.carbonData.find(d => 
+                d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                d.VMV_CODE === '13516'
+            );
+            
+            if (tocRecord) {
+                const tocValue = parseFloat(tocRecord.VALUE_VALEUR);
+                if (!isNaN(tocValue) && tocValue > 0) {
+                    return tocValue;
+                }
+            }
+            
+            // Try calculating from total carbon (6912) - inorganic carbon (2674)
+            const totalC = state.carbonData.find(d => 
+                d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                d.VMV_CODE === '6912'
+            );
+            const inorganicC = state.carbonData.find(d => 
+                d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                d.VMV_CODE === '2674'
+            );
+            
+            if (totalC && inorganicC) {
+                const total = parseFloat(totalC.VALUE_VALEUR);
+                const inorganic = parseFloat(inorganicC.VALUE_VALEUR);
+                if (!isNaN(total) && !isNaN(inorganic)) {
+                    const toc = total - inorganic;
+                    if (toc > 0) return toc;
+                }
+            }
+            
+            return null;
         }
 
         function getNormalizationFactors(sampleId) {
             const factors = { toc: null, fines: null };
             
-            // Get TOC value (VMV_CODE 13516)
+            // Get TOC value
             if (state.normalizeTOC && state.carbonData.length > 0) {
-                const tocRecord = state.carbonData.find(d => 
-                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
-                    d.VMV_CODE === '13516'
-                );
-                if (tocRecord) {
-                    const tocValue = parseFloat(tocRecord.VALUE_VALEUR);
-                    if (!isNaN(tocValue) && tocValue > 0) {
-                        factors.toc = tocValue;
-                    }
-                }
+                factors.toc = getTOCValue(sampleId);
             }
             
-            // Get fine fraction (VMV_CODE 5924 or sum of 5896-5906)
+            // Get fine fraction
             if (state.normalizeFines && state.physicalData.length > 0) {
                 const finesRecord = state.physicalData.find(d => 
                     d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
@@ -992,7 +1090,51 @@
                         factors.fines = finesValue;
                     }
                 } else {
-                    // Sum VMV_CODE 5896 to 5906
+                    const grainSizeRecords = state.physicalData.filter(d => 
+                        d['SAMPLE_ID_ÉCHANTILLON'] === sampleId
+                    );
+                    
+                    let sum = 0;
+                    let hasData = false;
+                    for (let code = 5896; code <= 5906; code++) {
+                        const record = grainSizeRecords.find(d => d.VMV_CODE === code.toString());
+                        if (record) {
+                            const value = parseFloat(record.VALUE_VALEUR);
+                            if (!isNaN(value)) {
+                                sum += value;
+                                hasData = true;
+                            }
+                        }
+                    }
+                    
+                    if (hasData && sum > 0) {
+                        factors.fines = sum;
+                    }
+                }
+            }
+            
+            return factors;
+        }
+
+        function getCoreNormalizationFactors(sampleId) {
+            const factors = { toc: null, fines: null };
+            
+            if (state.coreNormalizeTOC && state.carbonData.length > 0) {
+                factors.toc = getTOCValue(sampleId);
+            }
+            
+            if (state.coreNormalizeFines && state.physicalData.length > 0) {
+                const finesRecord = state.physicalData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '5924'
+                );
+                
+                if (finesRecord) {
+                    const finesValue = parseFloat(finesRecord.VALUE_VALEUR);
+                    if (!isNaN(finesValue) && finesValue > 0) {
+                        factors.fines = finesValue;
+                    }
+                } else {
                     const grainSizeRecords = state.physicalData.filter(d => 
                         d['SAMPLE_ID_ÉCHANTILLON'] === sampleId
                     );
@@ -1022,29 +1164,92 @@
         function normalizeValue(value, factors) {
             let normalized = value;
             
-            if (state.normalizeTOC && factors.toc !== null) {
+            if (factors.toc !== null) {
                 normalized = normalized / factors.toc;
             }
             
-            if (state.normalizeFines && factors.fines !== null) {
-                normalized = normalized / (factors.fines / 100); // Convert percent to decimal
+            if (factors.fines !== null) {
+                normalized = normalized / (factors.fines / 100);
             }
             
             return normalized;
         }
 
-        function canNormalizeSample(sampleId) {
-            const factors = getNormalizationFactors(sampleId);
+        function canNormalizeSample(sampleId, useTOC, useFines) {
+            const factors = useTOC || useFines ? 
+                { toc: getTOCValue(sampleId), fines: null } : 
+                getNormalizationFactors(sampleId);
             
-            if (state.normalizeTOC && factors.toc === null) {
-                return false;
+            if (useFines) {
+                const finesRecord = state.physicalData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '5924'
+                );
+                
+                if (finesRecord) {
+                    factors.fines = parseFloat(finesRecord.VALUE_VALEUR);
+                } else {
+                    let sum = 0;
+                    for (let code = 5896; code <= 5906; code++) {
+                        const record = state.physicalData.find(d => 
+                            d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                            d.VMV_CODE === code.toString()
+                        );
+                        if (record) {
+                            sum += parseFloat(record.VALUE_VALEUR) || 0;
+                        }
+                    }
+                    if (sum > 0) factors.fines = sum;
+                }
             }
             
-            if (state.normalizeFines && factors.fines === null) {
-                return false;
-            }
+            if (useTOC && factors.toc === null) return false;
+            if (useFines && factors.fines === null) return false;
             
             return true;
+        }
+
+        function getDepositionYear(sampleId, method) {
+            if (method === 'none' || !state.dateData.length) return null;
+            
+            if (method === 'cs137') {
+                const record = state.dateData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '59972'
+                );
+                if (record) {
+                    const year = parseFloat(record.VALUE_VALEUR);
+                    if (!isNaN(year)) return Math.round(year);
+                }
+            } else if (method === 'pb210') {
+                const record = state.dateData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '59973'
+                );
+                if (record) {
+                    const year = parseFloat(record.VALUE_VALEUR);
+                    if (!isNaN(year)) return Math.round(year);
+                }
+            } else if (method === 'mean') {
+                const cs137Record = state.dateData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '59972'
+                );
+                const pb210Record = state.dateData.find(d => 
+                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
+                    d.VMV_CODE === '59973'
+                );
+                
+                if (cs137Record && pb210Record) {
+                    const cs137 = parseFloat(cs137Record.VALUE_VALEUR);
+                    const pb210 = parseFloat(pb210Record.VALUE_VALEUR);
+                    if (!isNaN(cs137) && !isNaN(pb210)) {
+                        return Math.round(Math.sqrt(cs137 * pb210));
+                    }
+                }
+            }
+            
+            return null;
         }
 
         function initializeControls() {
@@ -1190,7 +1395,6 @@
                 state.map.remove();
             }
             
-            // Start centered on Great Lakes with appropriate zoom
             state.map = L.map('map').setView([45.0, -83.0], 6);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1222,14 +1426,12 @@
                 data = data.filter(d => d.VARIABLE === state.selectedSpecificContaminant);
             }
 
-            // Apply normalization filters
             if (state.normalizeTOC || state.normalizeFines) {
                 data = data.filter(d => {
                     const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
-                    return sampleId && canNormalizeSample(sampleId);
+                    return sampleId && canNormalizeSample(sampleId, state.normalizeTOC, state.normalizeFines);
                 });
                 
-                // Apply normalization to values
                 data = data.map(d => {
                     const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
                     const originalValue = parseFloat(d.VALUE_VALEUR);
@@ -1395,14 +1597,30 @@
         }
 
         function showCoreProfile(siteNo) {
-            const data = state.mergedData.filter(d => 
+            state.currentCoreSiteNo = siteNo;
+            
+            const allCoreData = state.mergedData.filter(d => 
                 d.SITE_NO === siteNo && 
                 d.MATRIX === 'S.CORE' &&
                 d.contaminantGroup === state.selectedContaminant
             );
             
-            if (state.selectedYear) {
-                const yearData = data.filter(d => {
+            if (allCoreData.length === 0) {
+                alert('No core data available for this station');
+                return;
+            }
+            
+            // Get the actual year(s) from the core data
+            const coreYears = [...new Set(allCoreData.map(d => {
+                const dateStr = d.DATE_TIME_HEURE;
+                if (dateStr) return parseInt(dateStr.split('-')[0]);
+                return null;
+            }))].filter(y => y);
+            
+            // If viewing "All Years", show all core data; otherwise filter
+            let data = allCoreData;
+            if (state.selectedYear !== null) {
+                data = allCoreData.filter(d => {
                     const dateStr = d.DATE_TIME_HEURE;
                     if (dateStr) {
                         const year = parseInt(dateStr.split('-')[0]);
@@ -1410,14 +1628,10 @@
                     }
                     return false;
                 });
-                if (yearData.length > 0) {
-                    data.length = 0;
-                    data.push(...yearData);
-                }
             }
             
             if (data.length === 0) {
-                alert('No core data available for this station');
+                alert('No core data available for this station in the selected year');
                 return;
             }
             
@@ -1427,10 +1641,12 @@
             document.getElementById('coreModalTitle').textContent = 
                 `Core Profile - ${site.SITE_NAME || siteNo}`;
             
-            const yearText = state.selectedYear === null ? 'All' : state.selectedYear;
+            const yearDisplay = coreYears.length === 1 ? coreYears[0] : 
+                               (state.selectedYear !== null ? state.selectedYear : coreYears.join(', '));
+            
             document.getElementById('coreModalInfo').innerHTML = `
                 <strong>Site ID:</strong> ${siteNo} | 
-                <strong>Year:</strong> ${yearText} | 
+                <strong>Sampling Year:</strong> ${yearDisplay} | 
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
@@ -1458,7 +1674,28 @@
             if (!variable || !state.currentCoreData) return;
             
             state.selectedCoreVariable = variable;
-            const filteredData = state.currentCoreData.filter(d => d.VARIABLE === variable);
+            state.selectedDateMethod = document.getElementById('dateMethSelect').value;
+            
+            let filteredData = state.currentCoreData.filter(d => d.VARIABLE === variable);
+            
+            // Apply core-specific normalization
+            if (state.coreNormalizeTOC || state.coreNormalizeFines) {
+                filteredData = filteredData.filter(d => {
+                    const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                    return sampleId && canNormalizeSample(sampleId, state.coreNormalizeTOC, state.coreNormalizeFines);
+                }).map(d => {
+                    const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                    const originalValue = parseFloat(d.VALUE_VALEUR);
+                    const factors = getCoreNormalizationFactors(sampleId);
+                    const normalizedValue = normalizeValue(originalValue, factors);
+                    
+                    return {
+                        ...d,
+                        VALUE_VALEUR: normalizedValue.toString(),
+                        ORIGINAL_VALUE: originalValue.toString()
+                    };
+                });
+            }
             
             renderCoreProfileChart(filteredData);
         }
@@ -1466,7 +1703,14 @@
         function closeCoreModal() {
             document.getElementById('coreModal').style.display = 'none';
             state.currentCoreData = null;
+            state.currentCoreSiteNo = null;
             state.selectedCoreVariable = null;
+            state.coreNormalizeTOC = false;
+            state.coreNormalizeFines = false;
+            document.getElementById('coreNormToc').checked = false;
+            document.getElementById('coreNormFines').checked = false;
+            document.getElementById('coreNormTocLabel').classList.remove('checked');
+            document.getElementById('coreNormFinesLabel').classList.remove('checked');
             if (state.charts.coreProfile) {
                 state.charts.coreProfile.destroy();
                 state.charts.coreProfile = null;
@@ -1477,11 +1721,17 @@
             if (!state.currentCoreData) return;
             
             const site = state.currentCoreData[0];
-            const yearText = state.selectedYear === null ? 'All' : state.selectedYear;
+            const coreYears = [...new Set(state.currentCoreData.map(d => {
+                const dateStr = d.DATE_TIME_HEURE;
+                if (dateStr) return parseInt(dateStr.split('-')[0]);
+                return null;
+            }))].filter(y => y);
+            
+            const yearDisplay = coreYears.length === 1 ? coreYears[0] : coreYears.join(', ');
             
             document.getElementById('diagramInfo').innerHTML = `
                 <strong>Site:</strong> ${site.SITE_NAME || site.SITE_NO}<br>
-                <strong>Year:</strong> ${yearText}<br>
+                <strong>Sampling Year:</strong> ${yearDisplay}<br>
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
@@ -1495,10 +1745,8 @@
 
         function renderCoreDiagram(data) {
             const coreVisual = document.getElementById('diagramCoreVisual');
-            const depthAxis = document.getElementById('diagramDepthAxis');
             const sliceDetails = document.getElementById('sliceDetails');
             coreVisual.innerHTML = '';
-            depthAxis.innerHTML = '';
             sliceDetails.innerHTML = '';
             
             const depthMap = {};
@@ -1520,8 +1768,6 @@
             const depths = Object.values(depthMap).sort((a, b) => b.start - a.start);
             const maxDepth = Math.max(...depths.map(d => Math.abs(d.end)));
             
-            let cumulativeHeight = 0;
-            
             depths.forEach((depth, idx) => {
                 const sliceDiv = document.createElement('div');
                 sliceDiv.className = 'core-slice';
@@ -1530,26 +1776,10 @@
                 const heightPx = (thickness / maxDepth) * 450;
                 sliceDiv.style.height = Math.max(heightPx, 25) + 'px';
                 
-                sliceDiv.textContent = `${thickness.toFixed(1)} cm`;
+                sliceDiv.textContent = `${depth.start.toFixed(1)} to ${depth.end.toFixed(1)} cm`;
                 
                 coreVisual.appendChild(sliceDiv);
                 
-                const marker = document.createElement('div');
-                marker.className = 'depth-marker';
-                marker.style.top = cumulativeHeight + 'px';
-                
-                const markerText = document.createElement('span');
-                markerText.className = 'depth-marker-text';
-                markerText.textContent = `${depth.start.toFixed(0)} cm`;
-                
-                const markerLine = document.createElement('div');
-                markerLine.className = 'depth-marker-line';
-                
-                marker.appendChild(markerText);
-                marker.appendChild(markerLine);
-                depthAxis.appendChild(marker);
-                
-                // Add slice details
                 const detailDiv = document.createElement('div');
                 detailDiv.style.padding = '10px';
                 detailDiv.style.borderBottom = '1px solid #dee2e6';
@@ -1558,24 +1788,7 @@
                     (${thickness.toFixed(1)} cm thick) - ${depth.count} measurements
                 `;
                 sliceDetails.appendChild(detailDiv);
-                
-                cumulativeHeight += heightPx;
             });
-            
-            const finalMarker = document.createElement('div');
-            finalMarker.className = 'depth-marker';
-            finalMarker.style.top = cumulativeHeight + 'px';
-            
-            const finalText = document.createElement('span');
-            finalText.className = 'depth-marker-text';
-            finalText.textContent = `${depths[depths.length - 1].end.toFixed(0)} cm`;
-            
-            const finalLine = document.createElement('div');
-            finalLine.className = 'depth-marker-line';
-            
-            finalMarker.appendChild(finalText);
-            finalMarker.appendChild(finalLine);
-            depthAxis.appendChild(finalMarker);
         }
 
         function renderCoreProfileChart(data) {
@@ -1584,12 +1797,15 @@
                 const endDepth = parseFloat(d.END_DEPTH_METERS) * 100;
                 const midDepth = (startDepth + endDepth) / 2;
                 const value = parseFloat(d.VALUE_VALEUR);
+                const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
+                const depositionYear = getDepositionYear(sampleId, state.selectedDateMethod);
                 
                 return {
                     depth: midDepth,
                     value: value,
                     start: startDepth,
-                    end: endDepth
+                    end: endDepth,
+                    year: depositionYear
                 };
             }).filter(p => !isNaN(p.value) && p.value > 0 && !isNaN(p.depth));
             
@@ -1602,18 +1818,15 @@
             }
             
             const variable = state.selectedCoreVariable;
-            const unit = data[0]['UNIT_UNITÉ'] || '';
+            const unit = data[0]['UNIT_UNITÉ'] || 'μg/g';
             
-            // Get min and max depths for axis
             const allDepths = points.map(p => p.depth);
-            const maxDepth = Math.min(...allDepths); // Most negative (deepest)
-            const minDepth = 0; // Surface
+            const maxDepth = Math.min(...allDepths);
+            const minDepth = 0;
             
-            // Create tick marks every cm
-            const depthRange = Math.abs(maxDepth);
-            const tickStep = Math.ceil(depthRange / 20); // About 20 ticks
+            const hasYearData = points.some(p => p.year !== null);
             
-            state.charts.coreProfile = new Chart(ctx, {
+            const chartConfig = {
                 type: 'line',
                 data: {
                     datasets: [{
@@ -1646,6 +1859,18 @@
                                 size: 16,
                                 weight: 'bold'
                             }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = points[context.dataIndex];
+                                    let label = `${context.parsed.x.toFixed(3)} ${unit}`;
+                                    if (point.year) {
+                                        label += ` (${point.year})`;
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -1666,6 +1891,7 @@
                             beginAtZero: true
                         },
                         y: {
+                            type: 'linear',
                             reverse: false,
                             min: maxDepth,
                             max: minDepth,
@@ -1683,20 +1909,57 @@
                             ticks: {
                                 stepSize: 1,
                                 callback: function(value) {
-                                    return value.toFixed(0) + ' cm';
+                                    return value.toFixed(0);
                                 }
                             }
                         }
                     }
                 }
-            });
+            };
+            
+            // Add second y-axis for deposition years if available
+            if (hasYearData) {
+                chartConfig.options.scales.y2 = {
+                    type: 'linear',
+                    position: 'right',
+                    min: maxDepth,
+                    max: minDepth,
+                    title: {
+                        display: true,
+                        text: 'Deposition Year',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            // Find the closest point to this depth
+                            const closestPoint = points.reduce((prev, curr) => 
+                                Math.abs(curr.depth - value) < Math.abs(prev.depth - value) ? curr : prev
+                            );
+                            return closestPoint.year || '';
+                        }
+                    }
+                };
+            }
+            
+            state.charts.coreProfile = new Chart(ctx, chartConfig);
             
             const legendDiv = document.getElementById('coreLegend');
+            const normText = (state.coreNormalizeTOC || state.coreNormalizeFines) ? 
+                '<br><strong>Normalized:</strong> ' + 
+                (state.coreNormalizeTOC ? 'TOC ' : '') + 
+                (state.coreNormalizeFines ? 'Fine Fraction' : '') : '';
+            
             legendDiv.innerHTML = `
-                <strong>Core Profile Information:</strong> ${variable} - ${points.length} depth measurements<br>
+                <strong>Core Profile Information:</strong> ${variable} - ${points.length} depth measurements${normText}<br>
                 <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     <strong>Note:</strong> 0 cm represents the sediment-water interface. Negative values indicate depth below the interface.
-                    Data points are positioned at the midpoint of each core slice.
+                    ${hasYearData ? 'Deposition years are shown on the right y-axis.' : ''}
                 </div>
             `;
         }
@@ -1725,11 +1988,10 @@
                     filtered = data.filter(d => d.VARIABLE === state.selectedSpecificContaminant);
                 }
 
-                // Apply normalization
                 if (state.normalizeTOC || state.normalizeFines) {
                     filtered = filtered.filter(d => {
                         const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
-                        return sampleId && canNormalizeSample(sampleId);
+                        return sampleId && canNormalizeSample(sampleId, state.normalizeTOC, state.normalizeFines);
                     }).map(d => {
                         const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
                         const originalValue = parseFloat(d.VALUE_VALEUR);
