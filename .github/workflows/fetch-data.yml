@@ -1,14 +1,16 @@
 name: Fetch Great Lakes Data
 
 on:
+  workflow_dispatch:
   schedule:
-    # Run every Monday at 2 AM UTC
     - cron: '0 2 * * 1'
-  workflow_dispatch: # Allows manual trigger
 
 jobs:
   fetch-data:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout repository
@@ -19,79 +21,82 @@ jobs:
         
       - name: Download Sites data
         run: |
-          curl -o data/great_lakes_sediment_monitoring_sites.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_sites.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_sites.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_sites.csv?lang=en"
           
-      - name: Download Date data
+      - name: Download Date data  
         run: |
-          curl -o data/great_lakes_sediment_monitoring_date.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_date.csv"
-          
-      - name: Download Variables data
-        run: |
-          curl -o data/great_lakes_sediment_monitoring_variables.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_variables.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_date.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_date.csv?lang=en"
           
       - name: Download Major Ions Nutrients Metals
         run: |
-          curl -o data/great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv?lang=en"
           
       - name: Download PCBs
         run: |
-          curl -o data/great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv?lang=en"
           
       - name: Download PAHs
         run: |
-          curl -o data/great_lakes_sediment_monitoring_polycyclic_aromatic_hydrocarbons.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polycyclic_aromatic_hydrocarbons.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_polycyclic_aromatic_hydrocarbons.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polycyclic_aromatic_hydrocarbons.csv?lang=en"
           
       - name: Download Organochlorines
         run: |
-          curl -o data/great_lakes_sediment_monitoring_organochlorines.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_organochlorines.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_organochlorines.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_organochlorines.csv?lang=en"
           
       - name: Download PBDEs
         run: |
-          curl -o data/great_lakes_sediment_monitoring_polybrominated_diphenyl_ethers.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polybrominated_diphenyl_ethers.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_polybrominated_diphenyl_ethers.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_polybrominated_diphenyl_ethers.csv?lang=en"
           
-      - name: Download Perfluoroalkyl Substances
+      - name: Download PFAS
         run: |
-          curl -o data/great_lakes_sediment_monitoring_perfluoroalkyl_substances.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_perfluoroalkyl_substances.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_perfluoroalkyl_substances.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_perfluoroalkyl_substances.csv?lang=en"
           
       - name: Download Halogenated Flame Retardants
         run: |
-          curl -o data/great_lakes_sediment_monitoring_halogenated_flame_retardants.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_halogenated_flame_retardants.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_halogenated_flame_retardants.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_halogenated_flame_retardants.csv?lang=en"
           
       - name: Download Phthalates
         run: |
-          curl -o data/great_lakes_sediment_monitoring_phthalates.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_phthalates.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_phthalates.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_phthalates.csv?lang=en"
           
       - name: Download Phenols
         run: |
-          curl -o data/great_lakes_sediment_monitoring_phenols.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_phenols.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_phenols.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_phenols.csv?lang=en"
           
       - name: Download Siloxanes
         run: |
-          curl -o data/great_lakes_sediment_monitoring_siloxanes.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_siloxanes.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_siloxanes.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_siloxanes.csv?lang=en"
           
       - name: Download Organophosphates
         run: |
-          curl -o data/great_lakes_sediment_monitoring_organophosphates.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_organophosphates.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_organophosphates.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_organophosphates.csv?lang=en"
           
       - name: Download Pyrethroids
         run: |
-          curl -o data/great_lakes_sediment_monitoring_pyrethroids.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_pyrethroids.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_pyrethroids.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_pyrethroids.csv?lang=en"
           
       - name: Download Amines
         run: |
-          curl -o data/great_lakes_sediment_monitoring_amines.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_amines.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_amines.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_amines.csv?lang=en"
           
       - name: Download Carbon
         run: |
-          curl -o data/great_lakes_sediment_monitoring_carbon.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_carbon.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_carbon.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_carbon.csv?lang=en"
           
       - name: Download Physical
         run: |
-          curl -o data/great_lakes_sediment_monitoring_physical.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_physical.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_physical.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_physical.csv?lang=en"
           
       - name: Download Radionuclides
         run: |
-          curl -o data/great_lakes_sediment_monitoring_radionuclides.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_radionuclides.csv"
+          curl -L -H "Accept: text/csv" -o data/great_lakes_sediment_monitoring_radionuclides.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/great_lakes_sediment_monitoring_radionuclides.csv?lang=en"
+          
+      - name: Verify downloads
+        run: |
+          echo "Checking file sizes..."
+          ls -lh data/
+          echo "Checking first file content..."
+          head -n 5 data/great_lakes_sediment_monitoring_sites.csv
           
       - name: Commit and push if changed
         run: |
