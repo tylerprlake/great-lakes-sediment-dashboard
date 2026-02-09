@@ -1,0 +1,49 @@
+name: Fetch Great Lakes Data
+
+on:
+  schedule:
+    # Run every Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Create data directory
+        run: mkdir -p data
+        
+      - name: Download Sites data
+        run: |
+          curl -o data/Sites-Lieux.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/Sites-Lieux.csv"
+          
+      - name: Download Metals data
+        run: |
+          curl -o data/Metals-Metaux.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/Metals-Metaux.csv"
+          
+      - name: Download PCBs data
+        run: |
+          curl -o data/PCBs-BPC.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/PCBs-BPC.csv"
+          
+      - name: Download Pesticides data
+        run: |
+          curl -o data/Pesticides.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/Pesticides.csv"
+          
+      - name: Download PAHs data
+        run: |
+          curl -o data/PAHs-HAP.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/PAHs-HAP.csv"
+          
+      - name: Download Dioxins data
+        run: |
+          curl -o data/Dioxins-Furanes.csv "https://data-donnees.az.ec.gc.ca/data/substances/monitor/great-lakes-water-quality-monitoring-and-aquatic-ecosystem-health-data/great-lakes-sediment-monitoring-and-surveillance-data/Dioxins-Furanes.csv"
+          
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add data/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update Great Lakes data - $(date +'%Y-%m-%d')" && git push)
