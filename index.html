@@ -611,7 +611,7 @@
                 </div>
 
                 <div class="chart-container">
-                    <h3>🗺️ Values by Station</h3>
+                    <h3>🗺️ Highest Concentration Stations</h3>
                     <div class="chart-wrapper">
                         <canvas id="stationChart"></canvas>
                     </div>
@@ -674,9 +674,9 @@
     </div>
 
     <script>
-        // Configuration - Update this to match your GitHub username and repo
+        // Configuration
         const GITHUB_USER = 'tylerprlake';
-        const GITHUB_REPO = 'great-lakes-sediment-dashboard'; // Change this to your actual repo name
+        const GITHUB_REPO = 'great-lakes-sediment-dashboard';
         const GITHUB_DATA_URL = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data/`;
 
         // Global state
@@ -699,11 +699,11 @@
             }
         };
 
-        // Data source mapping - all contaminant groups
+        // Data source mapping - renamed Metals & Metalloids
         const DATA_SOURCES = {
             sites: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_sites.csv',
             contaminants: {
-                'Metals & Metalloids': 'great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv',
+                'Metals and Nutrients': 'great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv',
                 'PCBs': 'great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv',
                 'PAHs': 'great_lakes_sediment_monitoring_polycyclic_aromatic_hydrocarbons.csv',
                 'Organochlorines': 'great_lakes_sediment_monitoring_organochlorines.csv',
@@ -749,7 +749,7 @@
                 }, 100);
             } catch (error) {
                 console.error('Error initializing app:', error);
-                showError('Failed to load data: ' + error.message + '. Please ensure GitHub Actions has run and data files exist.');
+                showError('Failed to load data: ' + error.message);
             }
         }
 
@@ -784,7 +784,6 @@
                     updateProgress();
                 } catch (error) {
                     console.error(`Failed to load ${name}:`, error);
-                    // Continue loading other files even if one fails
                 }
             }
             
@@ -795,7 +794,6 @@
             mergeData();
         }
 
-        // Load CSV file using PapaParse
         function loadCSV(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, {
@@ -815,7 +813,6 @@
             });
         }
 
-        // Merge contaminant data with site data
         function mergeData() {
             state.mergedData = [];
             
@@ -845,7 +842,6 @@
             console.log('Merged data:', state.mergedData.length, 'records');
         }
 
-        // Initialize control buttons
         function initializeControls() {
             const contaminantButtons = document.getElementById('contaminantButtons');
             contaminantButtons.innerHTML = '';
@@ -872,6 +868,14 @@
             if (!state.selectedContaminant) return;
             
             const years = getAvailableYears(state.selectedContaminant);
+            
+            // Add "All Years" button
+            const allYearsBtn = document.createElement('button');
+            allYearsBtn.className = 'btn';
+            allYearsBtn.textContent = 'All Years';
+            allYearsBtn.onclick = () => selectYear(null);
+            yearButtons.appendChild(allYearsBtn);
+            
             years.forEach(year => {
                 const btn = document.createElement('button');
                 btn.className = 'btn';
@@ -902,6 +906,7 @@
 
         function selectContaminant(name) {
             state.selectedContaminant = name;
+            state.selectedSpecificContaminant = ''; // Reset analyte selection
             
             document.querySelectorAll('#contaminantButtons .btn').forEach(btn => {
                 btn.classList.toggle('active', btn.textContent === name);
@@ -909,6 +914,9 @@
             
             updateYearButtons();
             updateContaminantDropdown();
+            
+            // Reset contaminant dropdown to "All"
+            document.getElementById('contaminantSelect').value = '';
             
             const years = getAvailableYears(name);
             if (!state.selectedYear || !years.includes(state.selectedYear)) {
@@ -922,7 +930,11 @@
             state.selectedYear = year;
             
             document.querySelectorAll('#yearButtons .btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent == year);
+                if (year === null) {
+                    btn.classList.toggle('active', btn.textContent === 'All Years');
+                } else {
+                    btn.classList.toggle('active', btn.textContent == year);
+                }
             });
             
             updateVisualization();
@@ -938,7 +950,7 @@
             updateYearButtons();
             
             const years = getAvailableYears(state.selectedContaminant);
-            if (!state.selectedYear || !years.includes(state.selectedYear)) {
+            if (state.selectedYear && !years.includes(state.selectedYear)) {
                 if (years.length > 0) {
                     state.selectedYear = years[years.length - 1];
                 }
@@ -991,7 +1003,7 @@
                 data = data.filter(d => d.MATRIX === state.selectedSampleType);
             }
             
-            if (state.selectedYear) {
+            if (state.selectedYear !== null) {
                 data = data.filter(d => {
                     const dateStr = d.DATE_TIME_HEURE;
                     if (dateStr) {
@@ -1023,7 +1035,11 @@
                 btn.classList.toggle('active', btn.textContent === state.selectedContaminant);
             });
             document.querySelectorAll('#yearButtons .btn').forEach(btn => {
-                btn.classList.toggle('active', btn.textContent == state.selectedYear);
+                if (state.selectedYear === null) {
+                    btn.classList.toggle('active', btn.textContent === 'All Years');
+                } else {
+                    btn.classList.toggle('active', btn.textContent == state.selectedYear);
+                }
             });
         }
 
@@ -1033,10 +1049,11 @@
                 ` - ${state.selectedSpecificContaminant}` : ' - All Variables';
             const typeText = state.selectedSampleType === 'ALL' ? 'All Types' : 
                            (state.selectedSampleType === 'S.SURFACE' ? 'Surface' : 'Core');
+            const yearText = state.selectedYear === null ? 'All Years' : state.selectedYear;
             info.innerHTML = `
                 <strong>Current Selection:</strong> ${state.selectedContaminant}${specificText} | 
                 Type: ${typeText} |
-                Year: ${state.selectedYear} | 
+                Year: ${yearText} | 
                 Records: ${data.length}
             `;
         }
@@ -1119,9 +1136,21 @@
                 state.markers.push(marker);
             });
             
+            // Smart map zoom
             if (state.markers.length > 0) {
                 const group = L.featureGroup(state.markers);
-                state.map.fitBounds(group.getBounds().pad(0.1));
+                const bounds = group.getBounds();
+                
+                if (state.markers.length === 1) {
+                    // Single station - zoom to show one Great Lake
+                    state.map.setView(bounds.getCenter(), 7);
+                } else {
+                    // Multiple stations - fit to bounds with padding
+                    state.map.fitBounds(bounds.pad(0.1));
+                }
+            } else {
+                // No data - default Great Lakes view
+                state.map.setView([45.4, -81.0], 6);
             }
         }
 
@@ -1134,7 +1163,6 @@
             return `hsl(${hue}, 70%, 50%)`;
         }
 
-        // Core Profile Functions
         function showCoreProfile(siteNo) {
             const data = state.mergedData.filter(d => 
                 d.SITE_NO === siteNo && 
@@ -1168,13 +1196,13 @@
             document.getElementById('coreModalTitle').textContent = 
                 `Core Profile - ${site.SITE_NAME || siteNo}`;
             
+            const yearText = state.selectedYear === null ? 'All' : state.selectedYear;
             document.getElementById('coreModalInfo').innerHTML = `
                 <strong>Site ID:</strong> ${siteNo} | 
-                <strong>Year:</strong> ${state.selectedYear || 'All'} | 
+                <strong>Year:</strong> ${yearText} | 
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
-            // Populate contaminant dropdown
             const variables = [...new Set(data.map(d => d.VARIABLE))].filter(v => v).sort();
             const select = document.getElementById('coreContaminantSelect');
             select.innerHTML = '<option value="">Select a contaminant...</option>';
@@ -1221,7 +1249,6 @@
             coreVisual.innerHTML = '';
             depthAxis.innerHTML = '';
             
-            // Group by depth and sort
             const depthMap = {};
             data.forEach(d => {
                 const startDepth = parseFloat(d.START_DEPTH_METERS) * 100;
@@ -1240,6 +1267,8 @@
             const depths = Object.values(depthMap).sort((a, b) => b.start - a.start);
             const maxDepth = Math.max(...depths.map(d => Math.abs(d.end)));
             
+            // Calculate total height for alignment
+            const totalHeight = 500;
             let cumulativeHeight = 0;
             
             depths.forEach((depth, idx) => {
@@ -1247,7 +1276,7 @@
                 sliceDiv.className = 'core-slice';
                 
                 const thickness = Math.abs(depth.end - depth.start);
-                const heightPx = (thickness / maxDepth) * 450;
+                const heightPx = (thickness / maxDepth) * totalHeight;
                 sliceDiv.style.height = Math.max(heightPx, 25) + 'px';
                 
                 sliceDiv.textContent = `${thickness.toFixed(1)} cm`;
@@ -1314,6 +1343,11 @@
             const variable = state.selectedCoreVariable;
             const unit = data[0]['UNIT_UNITÉ'] || '';
             
+            // Calculate y-axis range to match core visual
+            const depths = points.map(p => p.depth);
+            const maxDepth = Math.max(...depths.map(d => Math.abs(d)));
+            const minDepth = 0;
+            
             state.charts.coreProfile = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -1321,7 +1355,7 @@
                         label: variable,
                         data: points.map(p => ({ x: p.value, y: p.depth })),
                         borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        backgroundColor: '#667eea',
                         borderWidth: 3,
                         pointRadius: 6,
                         pointHoverRadius: 8,
@@ -1330,7 +1364,7 @@
                         pointBorderWidth: 2,
                         showLine: true,
                         tension: 0.1,
-                        fill: true
+                        fill: false
                     }]
                 },
                 options: {
@@ -1352,7 +1386,7 @@
                     scales: {
                         x: {
                             type: 'linear',
-                            position: 'top',
+                            position: 'bottom',
                             title: {
                                 display: true,
                                 text: `Concentration (${unit})`,
@@ -1367,6 +1401,8 @@
                         },
                         y: {
                             reverse: false,
+                            min: minDepth,
+                            max: -maxDepth,
                             title: {
                                 display: true,
                                 text: 'Depth (cm)',
@@ -1397,7 +1433,7 @@
                 </div>
                 <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     <strong>Note:</strong> 0 cm represents the sediment-water interface. Negative values indicate depth below the interface.
-                    Data points are positioned at the midpoint of each core slice.
+                    Data points are positioned at the midpoint of each core slice and should align vertically with the core diagram.
                 </div>
             `;
         }
@@ -1482,6 +1518,7 @@
         }
 
         function updateStationChart(data) {
+            // Calculate average concentration per station
             const stationData = {};
             data.forEach(d => {
                 const siteNo = d.SITE_NO;
@@ -1496,11 +1533,16 @@
                 }
             });
             
-            const stations = Object.keys(stationData).slice(0, 15);
-            const averages = stations.map(s => {
-                const values = stationData[s];
-                return values.reduce((a, b) => a + b, 0) / values.length;
-            });
+            // Calculate averages and sort by concentration (highest first)
+            const stationAverages = Object.entries(stationData).map(([name, values]) => ({
+                name,
+                average: values.reduce((a, b) => a + b, 0) / values.length
+            })).sort((a, b) => b.average - a.average);
+            
+            // Take top 15 stations
+            const topStations = stationAverages.slice(0, 15);
+            const stations = topStations.map(s => s.name);
+            const averages = topStations.map(s => s.average);
             
             const ctx = document.getElementById('stationChart');
             
@@ -1513,7 +1555,7 @@
                 data: {
                     labels: stations,
                     datasets: [{
-                        label: 'Average Value',
+                        label: 'Average Concentration',
                         data: averages,
                         backgroundColor: 'rgba(102, 126, 234, 0.7)',
                         borderColor: '#667eea',
@@ -1602,7 +1644,6 @@
             }
         }
 
-        // Start the application
         init();
     </script>
 </body>
