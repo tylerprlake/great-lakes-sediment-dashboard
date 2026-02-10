@@ -388,7 +388,7 @@
         .core-controls {
             margin-bottom: 20px;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 200px;
+            grid-template-columns: 1fr 1fr 200px;
             gap: 15px;
             align-items: flex-end;
         }
@@ -553,8 +553,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.6);
-            z-index: 9999;
+            background: rgba(0,0,0,0.8);
+            z-index: 99999;
             display: none;
             justify-content: center;
             align-items: center;
@@ -562,10 +562,16 @@
 
         .normalizing-content {
             background: white;
-            padding: 30px;
+            padding: 40px;
             border-radius: 15px;
             text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .normalizing-content p:last-child {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #999;
         }
 
         .date-method-select {
@@ -586,23 +592,9 @@
             display: none !important;
         }
 
-        .core-selector {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border-radius: 5px;
-            border-left: 4px solid #ffc107;
-        }
-
-        .core-selector label {
-            font-weight: 600;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        .core-selector select {
-            width: 100%;
-            max-width: 500px;
+        /* Offset markers for co-located samples */
+        .leaflet-marker-pane img {
+            transition: transform 0.2s;
         }
     </style>
 </head>
@@ -736,8 +728,8 @@
     <div id="normalizingOverlay" class="normalizing-overlay">
         <div class="normalizing-content">
             <div class="spinner"></div>
-            <p style="margin-top: 20px; font-size: 1.2em;">Normalizing data...</p>
-            <p style="color: #666; margin-top: 10px;">This may take a moment for large datasets</p>
+            <p style="margin-top: 20px; font-size: 1.2em; font-weight: 600;">Processing data...</p>
+            <p>Press ESC to cancel</p>
         </div>
     </div>
 
@@ -748,13 +740,6 @@
             <h2 id="coreModalTitle">Core Profile</h2>
             
             <div class="core-info" id="coreModalInfo"></div>
-            
-            <div class="core-selector" id="coreSelector" style="display: none;">
-                <label>⚠️ Multiple cores found - Select which core to view:</label>
-                <select id="coreSelect" onchange="selectSpecificCore()">
-                    <option value="">Select a core...</option>
-                </select>
-            </div>
             
             <div class="core-controls">
                 <div>
@@ -772,18 +757,21 @@
                         <option value="mean">Geometric Mean</option>
                     </select>
                 </div>
-                <div class="checkbox-group" id="coreNormContainer">
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="showCoreDiagram()">📊 Core Diagram</button>
+                </div>
+            </div>
+
+            <div class="core-controls" id="coreNormContainer">
+                <div class="checkbox-group">
                     <label class="checkbox-label" id="coreNormTocLabel">
                         <input type="checkbox" id="coreNormToc" onchange="updateCoreNormalization()">
-                        <span>TOC</span>
+                        <span>Normalize to TOC</span>
                     </label>
                     <label class="checkbox-label" id="coreNormFinesLabel">
                         <input type="checkbox" id="coreNormFines" onchange="updateCoreNormalization()">
-                        <span>Fines</span>
+                        <span>Normalize to Fine Fraction</span>
                     </label>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn btn-secondary" onclick="showCoreDiagram()">📊 Core Diagram</button>
                 </div>
             </div>
 
@@ -835,6 +823,7 @@
             physicalData: [],
             dateData: [],
             mergedData: [],
+            filteredDataCache: null, // Cache filtered data to avoid recomputation
             selectedContaminant: null,
             selectedYear: null,
             selectedSpecificContaminant: '',
@@ -844,11 +833,11 @@
             coreNormalizeTOC: false,
             coreNormalizeFines: false,
             currentCoreData: null,
-            availableCores: [],
-            selectedCoreId: null,
             currentCoreSiteNo: null,
+            currentCoreDate: null,
             selectedCoreVariable: null,
             selectedDateMethod: 'none',
+            abortRequested: false,
             map: null,
             markers: [],
             charts: {
@@ -881,6 +870,14 @@
             }
         };
 
+        // Listen for ESC key to abort loading
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('normalizingOverlay').style.display === 'flex') {
+                state.abortRequested = true;
+                document.getElementById('normalizingOverlay').style.display = 'none';
+            }
+        });
+
         async function init() {
             try {
                 document.getElementById('progressContainer').style.display = 'block';
@@ -893,7 +890,7 @@
                 if (firstContaminant) {
                     state.selectedContaminant = firstContaminant;
                     state.selectedYear = null;
-                    updateVisualization();
+                    await updateVisualization();
                     
                     setTimeout(() => {
                         const allData = state.mergedData.filter(d => 
@@ -1020,6 +1017,11 @@
         }
 
         async function toggleNormalization() {
+            const previousState = {
+                toc: state.normalizeTOC,
+                fines: state.normalizeFines
+            };
+            
             state.normalizeTOC = document.getElementById('tocNormalize').checked;
             state.normalizeFines = document.getElementById('finesNormalize').checked;
             
@@ -1027,12 +1029,25 @@
             document.getElementById('finesLabel').classList.toggle('checked', state.normalizeFines);
             
             if (state.normalizeTOC || state.normalizeFines) {
+                state.abortRequested = false;
                 document.getElementById('normalizingOverlay').style.display = 'flex';
                 await new Promise(resolve => setTimeout(resolve, 50));
+                
+                if (state.abortRequested) {
+                    // Revert changes
+                    state.normalizeTOC = previousState.toc;
+                    state.normalizeFines = previousState.fines;
+                    document.getElementById('tocNormalize').checked = previousState.toc;
+                    document.getElementById('finesNormalize').checked = previousState.fines;
+                    document.getElementById('tocLabel').classList.toggle('checked', state.normalizeTOC);
+                    document.getElementById('finesLabel').classList.toggle('checked', state.normalizeFines);
+                    return;
+                }
             }
             
             try {
-                updateVisualization();
+                state.filteredDataCache = null; // Invalidate cache
+                await updateVisualization();
             } finally {
                 document.getElementById('normalizingOverlay').style.display = 'none';
             }
@@ -1045,16 +1060,7 @@
             document.getElementById('coreNormTocLabel').classList.toggle('checked', state.coreNormalizeTOC);
             document.getElementById('coreNormFinesLabel').classList.toggle('checked', state.coreNormalizeFines);
             
-            if (state.coreNormalizeTOC || state.coreNormalizeFines) {
-                document.getElementById('normalizingOverlay').style.display = 'flex';
-                await new Promise(resolve => setTimeout(resolve, 50));
-            }
-            
-            try {
-                updateCoreProfileForVariable();
-            } finally {
-                document.getElementById('normalizingOverlay').style.display = 'none';
-            }
+            updateCoreProfileForVariable();
         }
 
         function getTOCValue(sampleId) {
@@ -1224,9 +1230,11 @@
             
             updateYearButtons();
             
-            document.getElementById('contaminantSelect').onchange = (e) => {
-                state.selectedSpecificContaminant = e.target.value;
-                updateVisualization();
+            document.getElementById('contaminantSelect').onchange = async (e) => {
+                await handleFilterChange(async () => {
+                    state.selectedSpecificContaminant = e.target.value;
+                    await updateVisualization();
+                });
             };
         }
 
@@ -1272,13 +1280,27 @@
             return years.sort((a, b) => a - b);
         }
 
-        async function selectContaminant(name) {
+        async function handleFilterChange(callback) {
             if (state.normalizeTOC || state.normalizeFines) {
+                state.abortRequested = false;
                 document.getElementById('normalizingOverlay').style.display = 'flex';
                 await new Promise(resolve => setTimeout(resolve, 50));
+                
+                if (state.abortRequested) {
+                    return;
+                }
             }
             
             try {
+                state.filteredDataCache = null;
+                await callback();
+            } finally {
+                document.getElementById('normalizingOverlay').style.display = 'none';
+            }
+        }
+
+        async function selectContaminant(name) {
+            await handleFilterChange(async () => {
                 state.selectedContaminant = name;
                 state.selectedSpecificContaminant = '';
                 state.selectedYear = null;
@@ -1291,35 +1313,37 @@
                 updateContaminantDropdown();
                 document.getElementById('contaminantSelect').value = '';
                 
-                updateVisualization();
-            } finally {
-                document.getElementById('normalizingOverlay').style.display = 'none';
-            }
+                await updateVisualization();
+            });
         }
 
-        function selectYear(year) {
-            state.selectedYear = year;
-            
-            document.querySelectorAll('#yearButtons .btn').forEach(btn => {
-                if (year === null) {
-                    btn.classList.toggle('active', btn.textContent === 'All Years');
-                } else {
-                    btn.classList.toggle('active', btn.textContent == year);
-                }
+        async function selectYear(year) {
+            await handleFilterChange(async () => {
+                state.selectedYear = year;
+                
+                document.querySelectorAll('#yearButtons .btn').forEach(btn => {
+                    if (year === null) {
+                        btn.classList.toggle('active', btn.textContent === 'All Years');
+                    } else {
+                        btn.classList.toggle('active', btn.textContent == year);
+                    }
+                });
+                
+                await updateVisualization();
             });
-            
-            updateVisualization();
         }
 
-        function selectSampleType(type) {
-            state.selectedSampleType = type;
-            
-            document.querySelectorAll('.toggle-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.type === type);
+        async function selectSampleType(type) {
+            await handleFilterChange(async () => {
+                state.selectedSampleType = type;
+                
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.type === type);
+                });
+                
+                updateYearButtons();
+                await updateVisualization();
             });
-            
-            updateYearButtons();
-            updateVisualization();
         }
 
         function updateContaminantDropdown() {
@@ -1378,7 +1402,14 @@
             }
         }
 
-        function getFilteredData() {
+        async function getFilteredData() {
+            // Return cached data if normalization settings haven't changed
+            if (state.filteredDataCache && 
+                !state.abortRequested &&
+                !(state.normalizeTOC || state.normalizeFines)) {
+                return state.filteredDataCache;
+            }
+            
             let data = state.mergedData.filter(d => 
                 d.contaminantGroup === state.selectedContaminant
             );
@@ -1403,10 +1434,16 @@
             }
 
             if (state.normalizeTOC || state.normalizeFines) {
+                // Check for abort
+                if (state.abortRequested) return [];
+                
                 data = data.filter(d => {
                     const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
                     return sampleId && canNormalizeSample(sampleId, state.normalizeTOC, state.normalizeFines);
                 });
+                
+                // Check for abort again before expensive operation
+                if (state.abortRequested) return [];
                 
                 data = data.map(d => {
                     const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
@@ -1423,11 +1460,21 @@
                 });
             }
             
+            // Cache the result if not normalizing
+            if (!(state.normalizeTOC || state.normalizeFines)) {
+                state.filteredDataCache = data;
+            }
+            
             return data;
         }
 
-        function updateVisualization() {
-            const data = getFilteredData();
+        async function updateVisualization() {
+            const data = await getFilteredData();
+            
+            if (state.abortRequested) {
+                state.abortRequested = false;
+                return;
+            }
             
             updateFilterInfo(data);
             updateStats(data);
@@ -1493,70 +1540,91 @@
             state.markers.forEach(marker => state.map.removeLayer(marker));
             state.markers = [];
             
-            const stationData = {};
+            // Group by location AND date to handle co-located samples
+            const locationGroups = {};
+            
             data.forEach(d => {
                 const siteNo = d.SITE_NO;
                 const lat = parseFloat(d.LATITUDE);
                 const lon = parseFloat(d.LONGITUDE);
-                const value = parseFloat(d.VALUE_VALEUR);
+                const date = d.DATE_TIME_HEURE ? d.DATE_TIME_HEURE.split(' ')[0] : 'Unknown';
                 const matrix = d.MATRIX;
-                const date = d.DATE_TIME_HEURE;
+                const value = parseFloat(d.VALUE_VALEUR);
                 
                 if (siteNo && !isNaN(lat) && !isNaN(lon)) {
-                    if (!stationData[siteNo]) {
-                        stationData[siteNo] = {
+                    const locationKey = `${lat.toFixed(4)}_${lon.toFixed(4)}`;
+                    
+                    if (!locationGroups[locationKey]) {
+                        locationGroups[locationKey] = {
                             lat, lon,
-                            siteName: d.SITE_NAME || siteNo,
-                            dates: [],
-                            values: [],
-                            hasCore: false,
-                            hasSurface: false
+                            samples: {}
                         };
                     }
+                    
+                    // Group by date within location
+                    const sampleKey = `${siteNo}_${date}_${matrix}`;
+                    if (!locationGroups[locationKey].samples[sampleKey]) {
+                        locationGroups[locationKey].samples[sampleKey] = {
+                            siteNo,
+                            siteName: d.SITE_NAME || siteNo,
+                            date,
+                            matrix,
+                            values: [],
+                            hasCore: matrix === 'S.CORE',
+                            hasSurface: matrix === 'S.SURFACE'
+                        };
+                    }
+                    
                     if (!isNaN(value) && value > 0) {
-                        stationData[siteNo].values.push(value);
-                    }
-                    if (date) {
-                        stationData[siteNo].dates.push(date);
-                    }
-                    if (matrix === 'S.CORE') {
-                        stationData[siteNo].hasCore = true;
-                    }
-                    if (matrix === 'S.SURFACE') {
-                        stationData[siteNo].hasSurface = true;
+                        locationGroups[locationKey].samples[sampleKey].values.push(value);
                     }
                 }
             });
             
-            Object.entries(stationData).forEach(([siteNo, info]) => {
-                const avgValue = info.values.length > 0 ?
-                    (info.values.reduce((a, b) => a + b, 0) / info.values.length).toFixed(3) : 'N/A';
+            // Create markers with offset for co-located samples
+            Object.values(locationGroups).forEach(location => {
+                const samples = Object.values(location.samples);
+                const numSamples = samples.length;
                 
-                const sortedDates = info.dates.sort().reverse();
-                const collectionDate = sortedDates.length > 0 ? 
-                    sortedDates[0].split(' ')[0] : 'N/A';
-                
-                const marker = L.circleMarker([info.lat, info.lon], {
-                    radius: info.hasCore ? 10 : 8,
-                    fillColor: getColorForValue(avgValue),
-                    color: info.hasCore ? '#ff0000' : '#fff',
-                    weight: info.hasCore ? 3 : 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(state.map);
-                
-                const popupContent = `
-                    <strong>${info.siteName}</strong><br>
-                    Site ID: ${siteNo}<br>
-                    Collection Date: ${collectionDate}<br>
-                    Avg Value: ${avgValue}<br>
-                    Measurements: ${info.values.length}<br>
-                    Types: ${info.hasSurface ? 'Surface' : ''} ${info.hasCore ? 'Core' : ''}
-                    ${info.hasCore ? '<br><button onclick="showCoreProfile(\'' + siteNo + '\')" style="margin-top:5px; padding:5px 10px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer;">View Core Profile</button>' : ''}
-                `;
-                
-                marker.bindPopup(popupContent);
-                state.markers.push(marker);
+                samples.forEach((sample, idx) => {
+                    let lat = location.lat;
+                    let lon = location.lon;
+                    
+                    // Offset co-located samples in a circle pattern
+                    if (numSamples > 1) {
+                        const angle = (idx / numSamples) * 2 * Math.PI;
+                        const offsetDistance = 0.02; // degrees
+                        lat += Math.cos(angle) * offsetDistance;
+                        lon += Math.sin(angle) * offsetDistance;
+                    }
+                    
+                    const avgValue = sample.values.length > 0 ?
+                        (sample.values.reduce((a, b) => a + b, 0) / sample.values.length).toFixed(3) : 'N/A';
+                    
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: sample.hasCore ? 10 : 8,
+                        fillColor: getColorForValue(avgValue),
+                        color: sample.hasCore ? '#ff0000' : '#fff',
+                        weight: sample.hasCore ? 3 : 2,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(state.map);
+                    
+                    const coreButton = sample.hasCore ? 
+                        `<br><button onclick="showCoreProfile('${sample.siteNo}', '${sample.date}')" style="margin-top:5px; padding:5px 10px; background:#667eea; color:white; border:none; border-radius:5px; cursor:pointer;">View Core Profile</button>` : '';
+                    
+                    const popupContent = `
+                        <strong>${sample.siteName}</strong><br>
+                        Site ID: ${sample.siteNo}<br>
+                        Collection Date: ${sample.date}<br>
+                        Type: ${sample.matrix}<br>
+                        Avg Value: ${avgValue}<br>
+                        Measurements: ${sample.values.length}${coreButton}
+                    `;
+                    
+                    marker.bindPopup(popupContent);
+                    state.markers.push(marker);
+                });
             });
             
             if (state.markers.length > 0) {
@@ -1573,116 +1641,46 @@
             return `hsl(${hue}, 70%, 50%)`;
         }
 
-        function showCoreProfile(siteNo) {
+        function showCoreProfile(siteNo, collectionDate) {
             state.currentCoreSiteNo = siteNo;
+            state.currentCoreDate = collectionDate;
             
-            const allCoreData = state.mergedData.filter(d => 
+            // Filter to specific core by date
+            const coreData = state.mergedData.filter(d => 
                 d.SITE_NO === siteNo && 
                 d.MATRIX === 'S.CORE' &&
-                d.contaminantGroup === state.selectedContaminant
+                d.contaminantGroup === state.selectedContaminant &&
+                d.DATE_TIME_HEURE && d.DATE_TIME_HEURE.startsWith(collectionDate)
             );
             
-            if (allCoreData.length === 0) {
-                alert('No core data available for this station');
+            if (coreData.length === 0) {
+                alert('No core data available for this station and date');
                 return;
             }
             
-            // Group cores by date to separate them
-            const coresByDate = {};
-            allCoreData.forEach(d => {
-                const date = d.DATE_TIME_HEURE ? d.DATE_TIME_HEURE.split(' ')[0] : 'Unknown';
-                if (!coresByDate[date]) {
-                    coresByDate[date] = [];
-                }
-                coresByDate[date].push(d);
-            });
-            
-            state.availableCores = Object.entries(coresByDate).map(([date, data]) => ({
-                date,
-                data,
-                sampleCount: data.length
-            })).sort((a, b) => b.date.localeCompare(a.date));
-            
-            const site = allCoreData[0];
+            state.currentCoreData = coreData;
+            const site = coreData[0];
             
             document.getElementById('coreModalTitle').textContent = 
                 `Core Profile - ${site.SITE_NAME || siteNo}`;
             
-            // Show core selector if multiple cores
-            if (state.availableCores.length > 1) {
-                document.getElementById('coreSelector').style.display = 'block';
-                const select = document.getElementById('coreSelect');
-                select.innerHTML = '<option value="">Select a core...</option>';
-                state.availableCores.forEach((core, idx) => {
-                    const option = document.createElement('option');
-                    option.value = idx;
-                    option.textContent = `Core sampled ${core.date} (${core.sampleCount} measurements)`;
-                    select.appendChild(option);
-                });
-                
-                // Auto-select most recent
-                state.selectedCoreId = 0;
-                select.value = 0;
-                state.currentCoreData = state.availableCores[0].data;
-            } else {
-                document.getElementById('coreSelector').style.display = 'none';
-                state.selectedCoreId = 0;
-                state.currentCoreData = state.availableCores[0].data;
-            }
-            
-            const selectedCore = state.availableCores[state.selectedCoreId];
-            
             document.getElementById('coreModalInfo').innerHTML = `
                 <strong>Site ID:</strong> ${siteNo} | 
-                <strong>Collection Date:</strong> ${selectedCore.date} | 
+                <strong>Collection Date:</strong> ${collectionDate} | 
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
-            populateCoreControls();
-            
-            document.getElementById('coreModal').style.display = 'block';
-        }
-
-        function selectSpecificCore() {
-            const idx = parseInt(document.getElementById('coreSelect').value);
-            if (isNaN(idx)) return;
-            
-            state.selectedCoreId = idx;
-            state.currentCoreData = state.availableCores[idx].data;
-            
-            const selectedCore = state.availableCores[idx];
-            document.getElementById('coreModalInfo').innerHTML = `
-                <strong>Site ID:</strong> ${state.currentCoreSiteNo} | 
-                <strong>Collection Date:</strong> ${selectedCore.date} | 
-                <strong>Contaminant Group:</strong> ${state.selectedContaminant}
-            `;
-            
-            populateCoreControls();
-        }
-
-        function populateCoreControls() {
-            const data = state.currentCoreData;
-            
-            const hasDate = hasDateData(data);
-            const hasTOC = hasTOCData(data);
-            const hasFines = hasFinesData(data);
+            const hasDate = hasDateData(coreData);
+            const hasTOC = hasTOCData(coreData);
+            const hasFines = hasFinesData(coreData);
             
             document.getElementById('dateMethContainer').classList.toggle('hidden', !hasDate);
             document.getElementById('coreNormContainer').classList.toggle('hidden', !hasTOC && !hasFines);
             
-            if (!hasTOC) {
-                document.getElementById('coreNormTocLabel').style.display = 'none';
-            } else {
-                document.getElementById('coreNormTocLabel').style.display = 'flex';
-            }
+            document.getElementById('coreNormTocLabel').style.display = hasTOC ? 'flex' : 'none';
+            document.getElementById('coreNormFinesLabel').style.display = hasFines ? 'flex' : 'none';
             
-            if (!hasFines) {
-                document.getElementById('coreNormFinesLabel').style.display = 'none';
-            } else {
-                document.getElementById('coreNormFinesLabel').style.display = 'flex';
-            }
-            
-            const variables = [...new Set(data.map(d => d.VARIABLE))].filter(v => v).sort();
+            const variables = [...new Set(coreData.map(d => d.VARIABLE))].filter(v => v).sort();
             const select = document.getElementById('coreContaminantSelect');
             select.innerHTML = '<option value="">Select a contaminant...</option>';
             variables.forEach(v => {
@@ -1697,6 +1695,8 @@
                 select.value = variables[0];
                 updateCoreProfileForVariable();
             }
+            
+            document.getElementById('coreModal').style.display = 'block';
         }
 
         function updateCoreProfileForVariable() {
@@ -1741,9 +1741,8 @@
         function closeCoreModal() {
             document.getElementById('coreModal').style.display = 'none';
             state.currentCoreData = null;
-            state.availableCores = [];
-            state.selectedCoreId = null;
             state.currentCoreSiteNo = null;
+            state.currentCoreDate = null;
             state.selectedCoreVariable = null;
             state.coreNormalizeTOC = false;
             state.coreNormalizeFines = false;
@@ -1761,11 +1760,10 @@
             if (!state.currentCoreData) return;
             
             const site = state.currentCoreData[0];
-            const selectedCore = state.availableCores[state.selectedCoreId];
             
             document.getElementById('diagramInfo').innerHTML = `
                 <strong>Site:</strong> ${site.SITE_NAME || site.SITE_NO}<br>
-                <strong>Collection Date:</strong> ${selectedCore.date}<br>
+                <strong>Collection Date:</strong> ${state.currentCoreDate}<br>
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
@@ -1859,6 +1857,8 @@
             const minDepth = Math.max(...allDepths.filter(d => d >= 0));
             
             const hasYearData = points.some(p => p.year !== null);
+            
+            console.log('Points with year data:', points.filter(p => p.year !== null));
             
             const chartConfig = {
                 type: 'line',
@@ -1957,13 +1957,9 @@
             
             // Add second y-axis for deposition years if available
             if (hasYearData && state.selectedDateMethod !== 'none') {
-                // Create map of depth to year for all points that have year data
                 const depthYearPairs = points
                     .filter(p => p.year !== null)
-                    .map(p => ({ depth: p.depth, year: p.year }))
-                    .sort((a, b) => b.depth - a.depth);
-                
-                console.log('Depth-year pairs:', depthYearPairs);
+                    .map(p => ({ depth: p.depth, year: p.year }));
                 
                 chartConfig.options.scales.y2 = {
                     type: 'linear',
@@ -1983,15 +1979,12 @@
                     },
                     ticks: {
                         callback: function(value) {
-                            // Find the closest point with year data
-                            if (depthYearPairs.length === 0) return '';
+                            const closest = depthYearPairs.reduce((prev, curr) => {
+                                if (!prev) return curr;
+                                return Math.abs(curr.depth - value) < Math.abs(prev.depth - value) ? curr : prev;
+                            }, null);
                             
-                            const closest = depthYearPairs.reduce((prev, curr) => 
-                                Math.abs(curr.depth - value) < Math.abs(prev.depth - value) ? curr : prev
-                            );
-                            
-                            // Only show year if we're close to an actual data point
-                            if (Math.abs(closest.depth - value) < 2) {
+                            if (closest && Math.abs(closest.depth - value) < 2) {
                                 return closest.year;
                             }
                             return '';
