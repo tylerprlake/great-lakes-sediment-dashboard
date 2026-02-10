@@ -388,7 +388,7 @@
         .core-controls {
             margin-bottom: 20px;
             display: grid;
-            grid-template-columns: 1fr 1fr 200px;
+            grid-template-columns: 1fr 200px;
             gap: 15px;
             align-items: flex-end;
         }
@@ -574,20 +574,6 @@
             color: #999;
         }
 
-        .date-method-select {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .date-method-select label {
-            margin: 0 0 8px 0;
-            font-size: 0.95em;
-        }
-
-        .date-method-select select {
-            width: 100%;
-        }
-
         .hidden {
             display: none !important;
         }
@@ -743,15 +729,6 @@
                         <option value="">Select a contaminant...</option>
                     </select>
                 </div>
-                <div class="date-method-select" id="dateMethContainer">
-                    <label>Dating Method:</label>
-                    <select id="dateMethSelect" onchange="updateCoreProfileForVariable()">
-                        <option value="none">Depth Only</option>
-                        <option value="cs137">¹³⁷Cs Dating</option>
-                        <option value="pb210">²¹⁰Pb Dating</option>
-                        <option value="mean">Geometric Mean</option>
-                    </select>
-                </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-secondary" onclick="showCoreDiagram()">📊 Core Diagram</button>
                 </div>
@@ -772,7 +749,7 @@
 
             <div id="noDataWarning" class="warning-box hidden">
                 <strong>⚠️ No data available with current settings</strong>
-                <p>This may be because normalization or dating data is not available for this core sample.</p>
+                <p>This may be because normalization data is not available for this core sample.</p>
             </div>
             
             <div class="core-profile-container">
@@ -816,7 +793,6 @@
             siteData: {},
             carbonData: [],
             physicalData: [],
-            dateData: [],
             mergedData: [],
             filteredDataCache: null,
             selectedContaminant: null,
@@ -831,7 +807,6 @@
             currentCoreSiteNo: null,
             currentCoreDate: null,
             selectedCoreVariable: null,
-            selectedDateMethod: 'none',
             abortRequested: false,
             map: null,
             markers: [],
@@ -846,7 +821,6 @@
             sites: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_sites.csv',
             carbon: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_carbon.csv',
             physical: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_physical.csv',
-            date: GITHUB_DATA_URL + 'great_lakes_sediment_monitoring_date.csv',
             contaminants: {
                 'Metals and Nutrients': 'great_lakes_sediment_monitoring_major_ions_nutrients_metals_metalloids.csv',
                 'PCBs': 'great_lakes_sediment_monitoring_polychlorinated_biphenyls.csv',
@@ -913,7 +887,7 @@
         }
 
         async function loadAllData() {
-            const totalFiles = 4 + Object.keys(DATA_SOURCES.contaminants).length;
+            const totalFiles = 3 + Object.keys(DATA_SOURCES.contaminants).length;
             let loadedFiles = 0;
 
             function updateProgress() {
@@ -944,17 +918,6 @@
                 updateProgress();
             } catch (error) {
                 state.physicalData = [];
-                updateProgress();
-            }
-
-            try {
-                state.dateData = await loadCSV(DATA_SOURCES.date);
-                console.log('Date data loaded:', state.dateData.length, 'records');
-                // Log sample of date data for debugging
-                console.log('Sample date records:', state.dateData.slice(0, 5));
-                updateProgress();
-            } catch (error) {
-                state.dateData = [];
                 updateProgress();
             }
             
@@ -1150,63 +1113,6 @@
             if (useTOC && getTOCValue(sampleId) === null) return false;
             if (useFines && getFinesValue(sampleId) === null) return false;
             return true;
-        }
-
-        function getDepositionYear(sampleId, method) {
-            if (method === 'none' || !state.dateData.length || !sampleId) return null;
-            
-            if (method === 'cs137') {
-                const record = state.dateData.find(d => 
-                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
-                    d.VMV_CODE === '59972'
-                );
-                if (record) {
-                    const year = parseFloat(record.VALUE_VALEUR);
-                    if (!isNaN(year) && year > 1800 && year < 2100) {
-                        return Math.round(year);
-                    }
-                }
-            } else if (method === 'pb210') {
-                const record = state.dateData.find(d => 
-                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
-                    d.VMV_CODE === '59973'
-                );
-                if (record) {
-                    const year = parseFloat(record.VALUE_VALEUR);
-                    if (!isNaN(year) && year > 1800 && year < 2100) {
-                        return Math.round(year);
-                    }
-                }
-            } else if (method === 'mean') {
-                const cs137Record = state.dateData.find(d => 
-                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
-                    d.VMV_CODE === '59972'
-                );
-                const pb210Record = state.dateData.find(d => 
-                    d['SAMPLE_ID_ÉCHANTILLON'] === sampleId && 
-                    d.VMV_CODE === '59973'
-                );
-                
-                if (cs137Record && pb210Record) {
-                    const cs137 = parseFloat(cs137Record.VALUE_VALEUR);
-                    const pb210 = parseFloat(pb210Record.VALUE_VALEUR);
-                    if (!isNaN(cs137) && !isNaN(pb210) && 
-                        cs137 > 1800 && pb210 > 1800 && 
-                        cs137 < 2100 && pb210 < 2100) {
-                        return Math.round(Math.sqrt(cs137 * pb210));
-                    }
-                }
-            }
-            
-            return null;
-        }
-
-        function hasDateData(data) {
-            const sampleIds = [...new Set(data.map(d => d['SAMPLE_ID_ÉCHANTILLON']).filter(id => id))];
-            return sampleIds.some(sampleId => 
-                getDepositionYear(sampleId, 'cs137') !== null || 
-                getDepositionYear(sampleId, 'pb210') !== null
-            );
         }
 
         function hasTOCData(data) {
@@ -1665,13 +1571,11 @@
                 <strong>Contaminant Group:</strong> ${state.selectedContaminant}
             `;
             
-            const hasDate = hasDateData(coreData);
             const hasTOC = hasTOCData(coreData);
             const hasFines = hasFinesData(coreData);
             
-            console.log('Has date data:', hasDate, 'Has TOC:', hasTOC, 'Has fines:', hasFines);
+            console.log('Has TOC:', hasTOC, 'Has fines:', hasFines);
             
-            document.getElementById('dateMethContainer').classList.toggle('hidden', !hasDate);
             document.getElementById('coreNormContainer').classList.toggle('hidden', !hasTOC && !hasFines);
             
             document.getElementById('coreNormTocLabel').style.display = hasTOC ? 'flex' : 'none';
@@ -1701,7 +1605,6 @@
             if (!variable || !state.currentCoreData) return;
             
             state.selectedCoreVariable = variable;
-            state.selectedDateMethod = document.getElementById('dateMethSelect').value;
             
             let filteredData = state.currentCoreData.filter(d => d.VARIABLE === variable);
             
@@ -1838,7 +1741,6 @@
                 const midDepthCm = (startDepthCm + endDepthCm) / 2;
                 const value = parseFloat(d.VALUE_VALEUR);
                 const sampleId = d['SAMPLE_ID_ÉCHANTILLON'];
-                const depositionYear = getDepositionYear(sampleId, state.selectedDateMethod);
                 
                 if (isNaN(value) || value <= 0) {
                     console.warn('Invalid value for record:', d);
@@ -1850,7 +1752,6 @@
                     value: value,
                     start: startDepthCm,
                     end: endDepthCm,
-                    year: depositionYear,
                     sampleId: sampleId || 'N/A'
                 };
             }).filter(p => p !== null);
@@ -1859,7 +1760,6 @@
             
             console.log('Chart points:', points.length);
             console.log('Sample points:', points.slice(0, 5));
-            console.log('Points with years:', points.filter(p => p.year !== null));
             
             const ctx = document.getElementById('coreProfileChart');
             
@@ -1871,12 +1771,9 @@
             
             const allDepths = points.map(p => p.depth);
             const maxDepth = Math.min(...allDepths);
-            const minDepth = Math.max(...allDepths.filter(d => d >= 0));
+            const minDepth = 0;
             
             console.log('Depth range:', minDepth, 'to', maxDepth);
-            
-            const hasYearData = points.some(p => p.year !== null);
-            console.log('Has year data:', hasYearData);
             
             const chartConfig = {
                 type: 'scatter',
@@ -1886,14 +1783,15 @@
                         data: points.map(p => ({ x: p.value, y: p.depth })),
                         borderColor: '#667eea',
                         backgroundColor: '#667eea',
-                        borderWidth: 2,
+                        borderWidth: 3,
                         pointRadius: 6,
                         pointHoverRadius: 8,
                         pointBackgroundColor: '#667eea',
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         showLine: true,
-                        tension: 0.1
+                        tension: 0.1,
+                        fill: false
                     }]
                 },
                 options: {
@@ -1920,9 +1818,6 @@
                                         `Depth: ${point.depth.toFixed(1)} cm (${point.start.toFixed(1)} to ${point.end.toFixed(1)} cm)`,
                                         `Sample ID: ${point.sampleId}`
                                     ];
-                                    if (point.year) {
-                                        lines.push(`Deposition Year: ${point.year}`);
-                                    }
                                     return lines;
                                 }
                             }
@@ -1972,39 +1867,6 @@
                 }
             };
             
-            // Add second y-axis for deposition years aligned with actual depths
-            if (hasYearData && state.selectedDateMethod !== 'none') {
-                // Create custom tick positions for each point that has a year
-                const yearPoints = points.filter(p => p.year !== null);
-                
-                console.log('Year points for axis:', yearPoints);
-                
-                chartConfig.options.scales.y2 = {
-                    type: 'linear',
-                    position: 'right',
-                    min: maxDepth - 1,
-                    max: minDepth + 1,
-                    title: {
-                        display: true,
-                        text: 'Deposition Year',
-                        font: {
-                            size: 14,
-                            weight: 'bold'
-                        }
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    },
-                    ticks: {
-                        callback: function(value, index, ticks) {
-                            // Find if any year point is close to this tick value
-                            const closePoint = yearPoints.find(p => Math.abs(p.depth - value) < 0.5);
-                            return closePoint ? closePoint.year : '';
-                        }
-                    }
-                };
-            }
-            
             state.charts.coreProfile = new Chart(ctx, chartConfig);
             
             const normText = (state.coreNormalizeTOC || state.coreNormalizeFines) ? 
@@ -2017,7 +1879,6 @@
                 <strong>Core Profile:</strong> ${variable}${normText} - ${points.length} depth measurements<br>
                 <div style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     <strong>Note:</strong> 0 cm represents the sediment-water interface. Negative values indicate depth below the interface.
-                    ${hasYearData && state.selectedDateMethod !== 'none' ? ' Deposition years are shown on the right y-axis at sample depths.' : ''}
                 </div>
             `;
         }
